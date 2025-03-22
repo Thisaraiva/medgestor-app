@@ -10,12 +10,12 @@ O projeto consiste no desenvolvimento de um aplicativo web para a gestão de con
 ## 2. Descrição do Projeto
 
 ### Tema do Projeto
-O projeto consiste no desenvolvimento de um aplicativo web para a gestão de consultórios médicos denominado “MedGestor”, focado no agendamento de consultas, gerenciamento de pacientes, histórico de prontuários e emissão de receitas médicas. O sistema visa modernizar e facilitar a administração de consultórios, oferecendo uma solução centralizada. O “MedGestor” será uma ferramenta intuitiva e segura, projetada para atender às necessidades de médicos, secretárias e pacientes, promovendo eficiência e organização no dia a dia do consultório.
+O projeto consiste no desenvolvimento de um aplicativo web para a gestão de consultórios médicos denominado “MedGestor”. O sistema visa modernizar e facilitar a administração de consultórios, oferecendo uma solução centralizada, uma ferramenta intuitiva e segura, projetada para atender às necessidades de médicos, secretárias e pacientes, promovendo eficiência e organização no dia a dia do consultório.
 
 ### Funcionalidades Principais:
 
 * Cadastro de Usuários: Diferentes perfis (médicos, administradores, secretárias e pacientes) com níveis de acesso específicos.
-* Agendamento de Consultas: Interface para agendar consultas, com distinção entre consultas com ou sem plano de saúde, e entre consultas iniciais ou de retorno.
+* Agendamento de Consultas: Interface para agendar consultas médicas, com distinção entre consultas com ou sem plano de saúde, e entre consultas iniciais ou de retorno.
 * Gestão de Pacientes: Cadastro e atualização de informações pessoais e médicas dos pacientes.
 * Prontuários Eletrônicos: Armazenamento e consulta de históricos médicos, incluindo diagnósticos, tratamentos e exames.
 * Receitas Médicas: Emissão de receitas formatadas, com informações padronizadas e possibilidade de impressão ou envio digital.
@@ -37,9 +37,9 @@ O projeto consiste no desenvolvimento de um aplicativo web para a gestão de con
 
 ### Limitações
 
-* **Telemedicina**: O sistema não incluirá funcionalidades de telemedicina, como videoconferências ou consultas remotas. O sistema não realizará atendimento online via telemedicina. A complexidade e requisitos técnicos de telemedicina estão fora do escopo inicial.
+* **Telemedicina**: O sistema não incluirá funcionalidades de telemedicina, como videoconferências ou consultas remotas. A complexidade e requisitos técnicos de telemedicina estão fora do escopo inicial.
 * **Integração com sistemas externos**: O projeto não abordará a integração com sistemas de planos de saúde, laboratórios ou farmácias. Não será implementada a integração direta com planos de saúde para aprovação de consultas. O foco inicial é na gestão interna do consultório.
-* **Pagamentos online**: O sistema não tratará de pagamentos ou transações financeiras relacionadas às consultas. O sistema não realizará pagamentos online para consultas. A gestão financeira exigiria um módulo adicional complexo.
+* **Pagamentos online**: O sistema não tratará de pagamentos ou transações financeiras relacionadas às consultas. A gestão financeira exigiria um módulo adicional complexo.
 * **Integração com sistemas oficiais**: Não haverá suporte para prescrição eletrônica oficial (assinatura digital reconhecida por órgãos reguladores).
 * **Aplicativos para Dispositivos móveis**: A versão inicial será focada em uma aplicação web, sem desenvolvimento de aplicativos móveis nativos. A prioridade é consolidar a funcionalidade web antes de expandir para um aplicativo mobile.
 
@@ -51,40 +51,42 @@ O projeto consiste no desenvolvimento de um aplicativo web para a gestão de con
 
 * RF01: O sistema deve permitir o cadastro, edição e remoção de usuários.
 * RF02: O sistema deve permitir o cadastro, edição e remoção de pacientes, incluindo informações pessoais (nome, CPF, telefone) e médicas (alergias, histórico).
-* RF03: O sistema deve permitir o agendamento, edição e cancelamento de consultas. As receitas são armazenadas com data, medicamentos prescritos e dosagens
-* RF04: O sistema deve registrar o histórico de consultas e prontuários dos pacientes. Cada prontuário inclui diagnósticos, tratamentos, exames e observações
-* RF05: O sistema deve permitir a emissão e consulta de histórico de receitas médicas. Modelo pré-formatado com informações do médico, paciente e medicamentos.
-* RF06: O sistema deve permitir a pesquisa de consultas e histórico de pacientes.
-* RF07: O sistema deve gerar relatórios sobre consultas realizadas.
-* RF08: O sistema deve permitir emissão de receitas médicas formatadas, com informações padronizadas.
-* RF09: O sistema deve permitir agendamento de consultas, com distinção entre consultas com ou sem plano de saúde, e entre consultas iniciais ou de retorno.
-* RF10: O sistema deve permitir Inclusão e consulta de prontuários médicos dos pacientes.
-* RF11: O sistema deve permitir o agendamento de consultas, permitindo a escolha do profissional e do horário disponível.
-* RF12: O sistema deve gerar relatórios de atendimentos realizados para fins administrativos e estatísticos.
-* RF13: O sistema deve permitir a busca rápida de pacientes e consultas por meio de filtros e palavras-chave.
-* RF14: O sistema deve enviar confirmações de consulta por e-mail/SMS/WhatsApp para pacientes e médicos.
+* RF03: O sistema deve permitir o agendamento, edição e cancelamento de consultas. 
+* RF04: O sistema deve permitir que as receitas sejam armazenadas com data, medicamentos prescritos e dosagens
+* RF05: O sistema deve registrar o histórico de consultas e prontuários dos pacientes. Cada prontuário inclui diagnósticos, tratamentos, exames e observações
+* RF06: O sistema deve permitir a emissão e consulta de histórico de receitas médicas. 
+* RF07: O sistema deve permitir a pesquisa de consultas e histórico de pacientes. 
+* RF08: O sistema deve gerar relatórios sobre consultas realizadas.
+* RF09: O sistema deve permitir emissão de receitas médicas formatadas, com informações padronizadas.
+* RF10: O sistema deve permitir agendamento de consultas, com distinção entre consultas com ou sem plano de saúde, e entre consultas iniciais ou de retorno.
+* RF11: O sistema deve permitir Inclusão e consulta de prontuários médicos dos pacientes.
+* RF12: O sistema deve permitir o agendamento de consultas, permitindo a escolha do profissional e do horário disponível.
+* RF13: O sistema deve gerar relatórios de atendimentos realizados para fins administrativos e estatísticos.
+* RF14: O sistema deve permitir a busca rápida de pacientes e consultas por meio de filtros e palavras-chave.
+* RF15: O sistema deve enviar confirmações de consulta por e-mail para pacientes e secretárias.
 
 #### Requisitos Não-Funcionais (RNF)
 
-* RNF01: O sistema deve garantir segurança e controle de acesso baseado em perfis de usuários.
-* RNF02: O sistema deve ser responsivo e acessível via browser de dispositivos móveis e desktop, compatível com os principais navegadores web.
-* RNF03: O sistema deve garantir a integridade dos dados armazenados no banco de dados.
-* RNF04: O sistema deve ser escalável e suportar múltiplos usuários simultaneamente, permitindo o aumento de usuários e consultórios.
-* RNF05: O sistema deve realizar logs de ações críticas para auditoria.
-* RNF06: O sistema deve possuir um tempo de resposta médio inferior a 2 segundos para operações comuns garantindo um uptime de pelo menos 99,5%.
-* RNF07: O sistema deve garantir a segurança dos dados, seguindo as diretrizes da LGPD (Lei Geral de Proteção de Dados).
-* RNF08: O sistema deve ser implantado em um ambiente cloud, com alta disponibilidade (99,9% uptime).
-* RNF09: O código-fonte deve seguir boas práticas de desenvolvimento, como SOLID, Clean Code, YAGNI, KISS e DRY.
+* RNF01: O sistema emitirá receitas médicas em modelo pré-formatado com informações do médico, paciente e medicamentos.
+* RNF02: O sistema deve garantir segurança e controle de acesso baseado em perfis de usuários.
+* RNF03: O sistema deve ser responsivo e acessível via browser de dispositivos móveis e desktop, compatível com os principais navegadores web.
+* RNF04: O sistema deve garantir a integridade dos dados armazenados no banco de dados.
+* RNF05: O sistema deve ser escalável e suportar múltiplos usuários simultaneamente, permitindo o aumento de usuários e consultórios.
+* RNF06: O sistema deve realizar logs de ações críticas para auditoria.
+* RNF07: O sistema deve possuir um tempo de resposta médio inferior a 2 segundos para operações comuns garantindo um uptime de pelo menos 99,5%.
+* RNF08: O sistema deve garantir a segurança dos dados, seguindo as diretrizes da LGPD (Lei Geral de Proteção de Dados).
+* RNF09: O sistema deve ser implantado em um ambiente cloud, com alta disponibilidade (99,9% uptime).
+* RNF10: O código-fonte deve seguir boas práticas de desenvolvimento, como SOLID, Clean Code, YAGNI, KISS e DRY.
 
 #### Representação dos Requisitos
 
-Um diagrama de casos de uso será apresentado para representar visualmente os principais fluxos do sistema. Vide anexo 1.
-
-Um Diagrama de Casos de Uso (UML) será utilizado para representar as interações entre os usuários (atores) e o sistema. Exemplo de atores:
+Um Diagrama de Casos de Uso (UML) será utilizado para representar visualmente os principais fluxos do sistema e as interações entre os usuários (atores) e o sistema. Atores envolvidos: (Vide anexo 1).
 
 * Secretária: Agenda consultas, cadastra pacientes e gerencia a agenda do médico.
-* Médico: Acessa prontuários e emite receitas.
+* Médico: Seleciona consulta médica, consulta histórico, acessa prontuários e emite receitas.
 * Paciente: Confirma agendamentos.
+
+Um Diagrama de Classes (UML) será utilizado para representar visualmente as classes (Agentes e Funcionalidades) da aplicação e o relacionamento entre eles. (Vide Anexo 2).
 
 ### 3.2. Considerações de Design
 
@@ -104,10 +106,13 @@ A arquitetura seguirá um padrão baseado em MVC (Model-View-Controller), garant
 
 #### Padrões de Arquitetura
 
+Uma visão geral da arquitetura da aplicação é apresentada abaixo:
+
 * MVC: Para separação clara entre lógica de negócios, interface e dados, para melhor organização do frontend e backend.
 * APIs: RESTful APIs para comunicação entre frontend e backend.
 * Automação e padronização: CI/CD para automação do deploy e testes.
 * Microserviços: Será considerada a divisão em microserviços para escalabilidade futura (ex.: serviço de autenticação, serviço de agendamento).
+* Conteinerização: Separação em contêineres (Docker) das camadas da aplicação Frontend, Backend e Banco de Dados para facilitar a escalabilidade.
 
 #### Modelos C4
 
@@ -129,10 +134,6 @@ Esse diagrama é um modelo de documentação de arquitetura de software que usa 
 * Frontend: React ou Vue.js para construção de interfaces dinâmicas e responsivas. Para o desenvolvimento do frontend.
 * Backend: Node.js com Express para criação de APIs RESTful. Para o desenvolvimento do backend.
 * Banco de Dados: PostgreSQL/SQL Server para armazenamento de dados relacionais com a utilização de Sequelize ou TypeORM para interação com o banco de dados.
-
-#### Banco de Dados
-
-* PostgreSQL ou SQL Server: Banco de dados relacional para armazenamento de informações.
 
 #### Ferramentas de Desenvolvimento e Gestão de Projeto
 
@@ -190,11 +191,11 @@ Esse diagrama é um modelo de documentação de arquitetura de software que usa 
 
      ![image](https://github.com/user-attachments/assets/e31172b1-fc83-4909-8d1b-cc90d7975f12)
 
-   ### Diagrama de Classes
+   ## Anexo 2: Diagrama de Classes
 
    ![image](https://github.com/user-attachments/assets/f000d430-7570-4ea9-b6e4-0304b1546ca3)
 
-   ### Anexo 3: Diagrama Modelo C4
+   ## Anexo 3: Diagrama Modelo C4
 
    ![image](https://github.com/user-attachments/assets/7665caff-7224-4ed1-88c2-56c4e2dcfe8e)
 
