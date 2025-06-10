@@ -1,71 +1,48 @@
-const { Appointment, User, Patient } = require('../models');
+const appointmentService = require('../services/appointmentService');
 
-   const createAppointment = async (req, res) => {
-     try {
-       const { doctorId, patientId, date, type, insurance } = req.body;
-       const appointment = await Appointment.create({ doctorId, patientId, date, type, insurance });
-       res.status(201).json(appointment);
-     } catch (error) {
-       res.status(400).json({ error: error.message });
-     }
-   };
-
-   const getAppointments = async (req, res) => {
-     try {
-       const appointments = await Appointment.findAll({
-         include: [
-           { model: User, as: 'doctor', attributes: ['id', 'name'] },
-           { model: Patient, as: 'patient', attributes: ['id', 'name'] },
-         ],
-       });
-       res.json(appointments);
-     } catch (error) {
-       res.status(400).json({ error: error.message });
-     }
-   };
-
-   const getAppointmentById = async (req, res) => {
-     try {
-       const appointment = await Appointment.findByPk(req.params.id, {
-         include: [
-           { model: User, as: 'doctor', attributes: ['id', 'name'] },
-           { model: Patient, as: 'patient', attributes: ['id', 'name'] },
-         ],
-       });
-       if (!appointment) {
-         return res.status(404).json({ error: 'Consulta não encontrada' });
+     const createAppointment = async (req, res) => {
+       try {
+         const appointment = await appointmentService.createAppointment(req.body);
+         res.status(201).json(appointment);
+       } catch (error) {
+         res.status(400).json({ error: error.message });
        }
-       res.json(appointment);
-     } catch (error) {
-       res.status(400).json({ error: error.message });
-     }
-   };
+     };
 
-   const updateAppointment = async (req, res) => {
-     try {
-       const { date, type, insurance } = req.body;
-       const appointment = await Appointment.findByPk(req.params.id);
-       if (!appointment) {
-         return res.status(404).json({ error: 'Consulta não encontrada' });
+     const getAppointments = async (req, res) => {
+       try {
+         const appointments = await appointmentService.getAppointments();
+         res.json(appointments);
+       } catch (error) {
+         res.status(400).json({ error: error.message });
        }
-       await appointment.update({ date, type, insurance });
-       res.json(appointment);
-     } catch (error) {
-       res.status(400).json({ error: error.message });
-     }
-   };
+     };
 
-   const deleteAppointment = async (req, res) => {
-     try {
-       const appointment = await Appointment.findByPk(req.params.id);
-       if (!appointment) {
-         return res.status(404).json({ error: 'Consulta não encontrada' });
+     const getAppointmentById = async (req, res) => {
+       try {
+         const appointment = await appointmentService.getAppointmentById(req.params.id);
+         res.json(appointment);
+       } catch (error) {
+         res.status(400).json({ error: error.message });
        }
-       await appointment.destroy();
-       res.status(204).send();
-     } catch (error) {
-       res.status(400).json({ error: error.message });
-     }
-   };
+     };
 
-   module.exports = { createAppointment, getAppointments, getAppointmentById, updateAppointment, deleteAppointment };
+     const updateAppointment = async (req, res) => {
+       try {
+         const appointment = await appointmentService.updateAppointment(req.params.id, req.body);
+         res.json(appointment);
+       } catch (error) {
+         res.status(400).json({ error: error.message });
+       }
+     };
+
+     const deleteAppointment = async (req, res) => {
+       try {
+         await appointmentService.deleteAppointment(req.params.id);
+         res.status(204).send();
+       } catch (error) {
+         res.status(400).json({ error: error.message });
+       }
+     };
+
+     module.exports = { createAppointment, getAppointments, getAppointmentById, updateAppointment, deleteAppointment };
