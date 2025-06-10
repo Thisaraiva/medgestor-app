@@ -4,7 +4,8 @@ CREATE TABLE users (
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
-  role VARCHAR(20) CHECK (role IN ('admin', 'doctor', 'secretary', 'patient')) NOT NULL,
+  role VARCHAR(20) CHECK (role IN ('admin', 'doctor', 'secretary')) NOT NULL,
+  crm VARCHAR(20),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -14,6 +15,7 @@ CREATE TABLE patients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   cpf VARCHAR(14) NOT NULL UNIQUE,
+  email VARCHAR(255) UNIQUE,
   phone VARCHAR(20),
   allergies TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -31,7 +33,7 @@ CREATE TABLE appointments (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE NO ACTION,
-  FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE NO ACTION
+  FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE NO ACTION
 );
 
 -- Medical Records Table
@@ -51,9 +53,14 @@ CREATE TABLE prescriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id UUID NOT NULL,
   doctor_id UUID NOT NULL,
-  medication TEXT NOT NULL,
+  medication VARCHAR(255) NOT NULL,
   dosage VARCHAR(255) NOT NULL,
-  date_issued TIMESTAMP NOT NULL,
+  frequency VARCHAR(255) NOT NULL,
+  duration VARCHAR(255) NOT NULL,
+  administration_instructions TEXT,
+  notes TEXT,
+  date_issued DATE NOT NULL,
+  status VARCHAR(20) CHECK (status IN ('active', 'inactive', 'expired')) DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,

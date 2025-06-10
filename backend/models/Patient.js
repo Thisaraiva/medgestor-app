@@ -1,34 +1,36 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Appointment = sequelize.define('Appointment', {
+const Patient = sequelize.define('Patient', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  doctorId: {
-    type: DataTypes.UUID,
+  name: {
+    type: DataTypes.STRING,
     allowNull: false,
   },
-  patientId: {
-    type: DataTypes.UUID,
+  cpf: {
+    type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
   },
-  date: {
-    type: DataTypes.DATE,
-    allowNull: false,
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
   },
-  type: {
-    type: DataTypes.ENUM('initial', 'return'),
-    allowNull: false,
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true,
   },
-  insurance: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
+  allergies: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
 }, {
   timestamps: true,
 });
 
-module.exports = Appointment;
+module.exports = Patient;

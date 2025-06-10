@@ -7,6 +7,22 @@ const Prescription = sequelize.define('Prescription', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
+  patientId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'patients',
+      key: 'id',
+    },
+  },
+  doctorId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id',
+    },
+  },
   medication: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -44,6 +60,7 @@ const Prescription = sequelize.define('Prescription', {
   },
 }, {
   timestamps: true,
+  tableName: 'prescriptions',
 });
 
 module.exports = Prescription;

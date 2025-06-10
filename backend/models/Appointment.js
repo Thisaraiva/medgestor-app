@@ -1,12 +1,27 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Appointment Model
 const Appointment = sequelize.define('Appointment', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
+  },
+  doctorId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id',
+    },
+  },
+  patientId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'patients',
+      key: 'id',
+    },
   },
   date: {
     type: DataTypes.DATE,
@@ -22,6 +37,7 @@ const Appointment = sequelize.define('Appointment', {
   },
 }, {
   timestamps: true,
+  tableName: 'appointments',
 });
 
 module.exports = Appointment;

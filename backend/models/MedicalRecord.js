@@ -10,6 +10,10 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
   patientId: {
     type: DataTypes.UUID,
     allowNull: false,
+    references: {
+      model: 'patients',
+      key: 'id',
+    },
   },
   diagnosis: {
     type: DataTypes.TEXT,
@@ -25,6 +29,7 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
   },
 }, {
   timestamps: true,
+  tableName: 'medical_records',
 });
 
 module.exports = MedicalRecord;
