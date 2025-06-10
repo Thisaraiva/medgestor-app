@@ -1,0 +1,40 @@
+{
+  "name": "medgestor-backend",
+  "version": "1.0.0",
+  "description": "Application for managing medical appointments",
+  "main": "server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thisaraiva/medgestor-app.git"
+  },
+  "author": "Thiago de Freitas Saraiva",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Thisaraiva/medgestor-app/issues"
+  },
+  "homepage": "https://github.com/Thisaraiva/medgestor-app#readme",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "sequelize": "^6.37.7",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.57.0",
+    "sequelize-cli": "^6.6.2"
+  }
+}

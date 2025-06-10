@@ -1,0 +1,14 @@
+@startuml actor "Médico" as Doctor actor "Secretária" as Secretary actor "Paciente" as Patient
+
+ Doctor --> (Cadastrar Paciente)
+ Doctor --> (Agendar Consulta)
+ Doctor --> (Emitir Receita)
+ Doctor --> (Consultar Prontuário)
+
+ Secretary --> (Cadastrar Paciente)
+ Secretary --> (Agendar Consulta)
+ Secretary --> (Consultar Agenda)
+
+ Patient --> (Confirmar Agendamento)
+
+ @enduml
