@@ -23,3 +23,5 @@ const Appointment = sequelize.define('Appointment', {
 }, {
   timestamps: true,
 });
+
+module.exports = Appointment;

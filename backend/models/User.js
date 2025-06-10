@@ -22,9 +22,16 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM('admin', 'doctor', 'secretary', 'patient'),
+    type: DataTypes.ENUM('admin', 'doctor', 'secretary'),
     allowNull: false,
+  },
+  crm: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'CRM do médico (opcional)',
   },
 }, {
   timestamps: true,
 });
+
+module.exports = User;

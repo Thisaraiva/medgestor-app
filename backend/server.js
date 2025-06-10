@@ -24,16 +24,18 @@ app.use('/api/prescriptions', prescriptionRoutes);
 // Error Handling
 app.use(errorMiddleware);
 
-// Database Sync
+// Database Connection and Sync
 sequelize.authenticate()
-  .then(() => console.log('Conexão com PostgreSQL estabelecida'))
-  .catch(err => console.error('Erro ao conectar:', err));
-
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database synced');
-  app.listen(5000, () => {
-    console.log('Server running on port 5000');
+  .then(() => {
+    console.log('Conexão com PostgreSQL estabelecida');
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => {
+    console.log('Database synced');
+    app.listen(5000, () => {
+      console.log('Server running on port 5000');
+    });
+  })
+  .catch(err => {
+    console.error('Erro ao conectar ou sincronizar o banco:', err);
   });
-}).catch(err => {
-  console.error('Database sync failed:', err);
-});
