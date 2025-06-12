@@ -30,14 +30,10 @@ const PORT = process.env.PORT || 5000;
 sequelize.authenticate()
   .then(() => {
     console.log('Conexão com PostgreSQL estabelecida');
-    //return sequelize.sync({ alter: false });
-  })
-  .then(() => {
-    console.log('Database synced');
-    app.listen(5000, () => {
-      console.log('Server running on port 5000');
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
   })
-  .catch(err => {
-    console.error('Erro ao conectar ou sincronizar o banco:', err);
+  .catch((err) => {
+    console.error('Erro ao conectar ao banco:', err);
   });
