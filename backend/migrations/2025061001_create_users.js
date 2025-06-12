@@ -9,16 +9,16 @@ module.exports = {
                 primaryKey: true,
             },
             name: {
-                type: Sequelize.STRING,
+                type: Sequelize.STRING(255),
                 allowNull: false,
             },
             email: {
-                type: Sequelize.STRING,
+                type: Sequelize.STRING(255),
                 allowNull: false,
                 unique: true,
             },
             password: {
-                type: Sequelize.STRING,
+                type: Sequelize.STRING(255),
                 allowNull: false,
             },
             role: {
@@ -26,7 +26,7 @@ module.exports = {
                 allowNull: false,
             },
             crm: {
-                type: Sequelize.STRING,
+                type: Sequelize.STRING(20),
                 allowNull: true,
             },
             created_at: {
