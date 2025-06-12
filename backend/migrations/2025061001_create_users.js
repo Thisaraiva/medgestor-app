@@ -29,11 +29,11 @@ module.exports = {
                 type: Sequelize.STRING(20),
                 allowNull: true,
             },
-            created_at: {
+            createdAt: {
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.NOW,
             },
-            updated_at: {
+            updatedAt: {
                 type: Sequelize.DATE,
                 defaultValue: Sequelize.NOW,
             },
