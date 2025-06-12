@@ -31,6 +31,7 @@ const Patient = sequelize.define('Patient', {
   },
 }, {
   timestamps: true,
+  tableName: 'patients',
 });
 
 module.exports = Patient;

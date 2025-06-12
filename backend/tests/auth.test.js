@@ -29,6 +29,7 @@ describe('Auth API', () => {
   it('should login an existing user', async () => {
     const hashedPassword = await bcrypt.hash('password123', 10);
     await User.create({
+      id: '123e4567-e89b-12d3-a456-426614174000',
       name: 'Test User',
       email: 'login@example.com',
       password: hashedPassword,

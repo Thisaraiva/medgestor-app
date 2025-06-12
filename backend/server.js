@@ -24,11 +24,13 @@ app.use('/api/prescriptions', prescriptionRoutes);
 // Error Handling
 app.use(errorMiddleware);
 
+const PORT = process.env.PORT || 5000;
+
 // Database Connection and Sync
 sequelize.authenticate()
   .then(() => {
     console.log('Conexão com PostgreSQL estabelecida');
-    return sequelize.sync({ alter: true });
+    //return sequelize.sync({ alter: false });
   })
   .then(() => {
     console.log('Database synced');

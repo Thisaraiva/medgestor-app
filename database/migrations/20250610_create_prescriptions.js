@@ -2,11 +2,29 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('medications', {
+    await queryInterface.createTable('prescriptions', {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
+      },
+      patient_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'patients',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      },
+      doctor_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id',
+        },
+        onDelete: 'NO ACTION',
       },
       medication: {
         type: Sequelize.STRING,
@@ -27,7 +45,7 @@ module.exports = {
         allowNull: false,
         comment: 'Ex.: Por 5 dias',
       },
-      administrationInstructions: {
+      administration_instructions: {
         type: Sequelize.TEXT,
         comment: 'Ex.: Tomar após as refeições com água',
       },
@@ -35,7 +53,7 @@ module.exports = {
         type: Sequelize.TEXT,
         comment: 'Ex.: Evitar álcool durante o tratamento',
       },
-      dateIssued: {
+      date_issued: {
         type: Sequelize.DATEONLY,
         allowNull: false,
       },
@@ -55,6 +73,6 @@ module.exports = {
   },
 
   down: async (queryInterface) => {
-    await queryInterface.dropTable('medications');
+    await queryInterface.dropTable('prescriptions');
   },
 };
