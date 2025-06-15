@@ -8,7 +8,7 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
       },
-      patient_id: {
+      patientId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -17,7 +17,7 @@ module.exports = {
         },
         onDelete: 'CASCADE',
       },
-      doctor_id: {
+      doctorId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -32,28 +32,30 @@ module.exports = {
       },
       dosage: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: 'Ex.: 500 mg',
       },
       frequency: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: 'Ex.: A cada 8 horas às 8h, 16h, 24h',
       },
       duration: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: 'Ex.: Por 5 dias',
       },
-      administration_instructions: {
+      administrationInstructions: {
         type: Sequelize.TEXT,
+        allowNull: true,
         comment: 'Ex.: Tomar após as refeições com água',
       },
       notes: {
         type: Sequelize.TEXT,
+        allowNull: true,
         comment: 'Ex.: Evitar álcool durante o tratamento',
       },
-      date_issued: {
+      dateIssued: {
         type: Sequelize.DATEONLY,
         allowNull: false,
       },

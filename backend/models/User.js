@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const bcrypt = require('bcryptjs');
 
-// User Model
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.UUID,
@@ -16,6 +16,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
+    validate: {
+      isEmail: true,
+    },
   },
   password: {
     type: DataTypes.STRING,
@@ -28,11 +31,24 @@ const User = sequelize.define('User', {
   crm: {
     type: DataTypes.STRING,
     allowNull: true,
-    comment: 'CRM do médico (opcional)',
+    validate: {
+      isCrmValid(value) {
+        if (this.role === 'doctor' && !value) {
+          throw new Error('CRM is required for doctors');
+        }
+      },
+    },
   },
 }, {
   timestamps: true,
   tableName: 'users',
+  hooks: {
+    beforeSave: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 10);
+      }
+    },
+  },
 });
 
 module.exports = User;

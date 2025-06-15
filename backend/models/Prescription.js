@@ -29,25 +29,27 @@ const Prescription = sequelize.define('Prescription', {
   },
   dosage: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     comment: 'Ex.: 500 mg',
   },
   frequency: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     comment: 'Ex.: A cada 8 horas às 8h, 16h, 24h',
   },
   duration: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     comment: 'Ex.: Por 5 dias',
   },
   administrationInstructions: {
     type: DataTypes.TEXT,
+    allowNull: true,
     comment: 'Ex.: Tomar após as refeições com água',
   },
   notes: {
     type: DataTypes.TEXT,
+    allowNull: true,
     comment: 'Ex.: Evitar álcool durante o tratamento',
   },
   dateIssued: {

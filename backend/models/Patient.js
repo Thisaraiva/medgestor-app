@@ -15,6 +15,13 @@ const Patient = sequelize.define('Patient', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
+    validate: {
+      isCPFValid(value) {
+        if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(value)) {
+          throw new Error('CPF must be in format 123.456.789-00');
+        }
+      },
+    },
   },
   email: {
     type: DataTypes.STRING,

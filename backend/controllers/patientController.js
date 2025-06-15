@@ -1,48 +1,56 @@
+const asyncHandler = require('../middleware/controllerMiddleware');
 const patientService = require('../services/patientService');
+const Joi = require('joi');
 
-     const createPatient = async (req, res) => {
-       try {
-         const patient = await patientService.createPatient(req.body);
-         res.status(201).json(patient);
-       } catch (error) {
-         res.status(400).json({ error: error.message });
-       }
-     };
+const createSchema = Joi.object({
+  name: Joi.string().min(3).max(255).required(),
+  cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).required(),
+  email: Joi.string().email().allow(null),
+  phone: Joi.string().allow(null),
+  allergies: Joi.string().allow(null),
+});
 
-     const getPatients = async (req, res) => {
-       try {
-         const patients = await patientService.getPatients();
-         res.json(patients);
-       } catch (error) {
-         res.status(400).json({ error: error.message });
-       }
-     };
+const updateSchema = Joi.object({
+  name: Joi.string().min(3).max(255),
+  email: Joi.string().email().allow(null),
+  phone: Joi.string().allow(null),
+  allergies: Joi.string().allow(null),
+}).min(1);
 
-     const getPatientById = async (req, res) => {
-       try {
-         const patient = await patientService.getPatientById(req.params.id);
-         res.json(patient);
-       } catch (error) {
-         res.status(400).json({ error: error.message });
-       }
-     };
+const createPatient = asyncHandler(async (req, res) => {
+  const { error, value } = createSchema.validate(req.body);
+  if (error) {
+    throw new Error(error.details[0].message);
+  }
 
-     const updatePatient = async (req, res) => {
-       try {
-         const patient = await patientService.updatePatient(req.params.id, req.body);
-         res.json(patient);
-       } catch (error) {
-         res.status(400).json({ error: error.message });
-       }
-     };
+  const patient = await patientService.createPatient(value);
+  res.status(201).json(patient);
+});
 
-     const deletePatient = async (req, res) => {
-       try {
-         await patientService.deletePatient(req.params.id);
-         res.status(204).send();
-       } catch (error) {
-         res.status(400).json({ error: error.message });
-       }
-     };
+const getPatients = asyncHandler(async (req, res) => {
+  const { cpf, name } = req.query;
+  const patients = await patientService.getPatients({ cpf, name });
+  res.json(patients);
+});
 
-     module.exports = { createPatient, getPatients, getPatientById, updatePatient, deletePatient };
+const getPatientById = asyncHandler(async (req, res) => {
+  const patient = await patientService.getPatientById(req.params.id);
+  res.json(patient);
+});
+
+const updatePatient = asyncHandler(async (req, res) => {
+  const { error, value } = updateSchema.validate(req.body);
+  if (error) {
+    throw new Error(error.details[0].message);
+  }
+
+  const patient = await patientService.updatePatient(req.params.id, value);
+  res.json(patient);
+});
+
+const deletePatient = asyncHandler(async (req, res) => {
+  await patientService.deletePatient(req.params.id);
+  res.status(204).send();
+});
+
+module.exports = { createPatient, getPatients, getPatientById, updatePatient, deletePatient };

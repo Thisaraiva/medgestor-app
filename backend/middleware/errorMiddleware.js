@@ -1,5 +1,5 @@
-const errorMiddleware = (err, req, res, next) => {
-     console.error(err.stack);
+const errorMiddleware = (err, req, res, _next) => {
+     //console.error(err.stack);
      res.status(err.status || 500).json({
        error: {
          message: err.message || 'Erro interno do servidor',

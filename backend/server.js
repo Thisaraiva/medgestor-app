@@ -26,14 +26,26 @@ app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 
-// Database Connection and Sync
-sequelize.authenticate()
-  .then(() => {
-    console.log('Conexão com PostgreSQL estabelecida');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
+// Graceful Shutdown
+const server = app.listen(PORT, async () => {
+  try {
+    await sequelize.authenticate();
+    if (process.env.NODE_ENV === 'test') {
+      await sequelize.sync({ force: true });
+    }
+    console.log(`Server running on port ${PORT}`);
+  } catch (err) {
     console.error('Erro ao conectar ao banco:', err);
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', async () => {
+  console.log('Shutting down server...');
+  server.close(() => {
+    sequelize.close().then(() => {
+      console.log('Database connection closed');
+      process.exit(0);
+    });
   });
+});
