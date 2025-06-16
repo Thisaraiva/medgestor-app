@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
   async up(queryInterface) {
+    // Limpar tabela antes de inserir
+    await queryInterface.bulkDelete('users', null, {});
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(process.env.SEED_DEFAULT_PASSWORD || 'pass123', salt);
 
@@ -42,6 +44,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.bulkDelete('users', {});
+    await queryInterface.bulkDelete('users', null, {});
   },
 };
