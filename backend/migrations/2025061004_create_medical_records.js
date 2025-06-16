@@ -8,7 +8,7 @@
            defaultValue: Sequelize.UUIDV4,
            primaryKey: true,
          },
-         patient_id: {
+         patientId: {
            type: Sequelize.UUID,
            allowNull: false,
            references: {
