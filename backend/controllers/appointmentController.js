@@ -1,6 +1,6 @@
 const asyncHandler = require('../middleware/controllerMiddleware');
 const appointmentService = require('../services/appointmentService');
-const { sendAppointmentConfirmation } = require('../utils/email');
+//const { sendAppointmentConfirmation } = require('../utils/email');
 const Joi = require('joi');
 
 const createSchema = Joi.object({
@@ -18,10 +18,10 @@ const createAppointment = asyncHandler(async (req, res) => {
   }
 
   const appointment = await appointmentService.createAppointment(value);
-  await sendAppointmentConfirmation(req.body.email, {
+ /* await sendAppointmentConfirmation(req.body.email, {
     date: appointment.date,
     doctorName: appointment.doctorId,
-  });
+  });*/
   res.status(201).json(appointment);
 });
 
