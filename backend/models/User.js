@@ -37,7 +37,7 @@ const User = sequelize.define('User', {
           throw new Error('CRM is required for doctors');
         }
         if (this.role !== 'doctor' && value) {
-            throw new Error('CRM must be null for non-doctors');
+          throw new Error('CRM must be null for non-doctors');
         }
       },
     },

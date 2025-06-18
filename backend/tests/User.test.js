@@ -1,29 +1,17 @@
 const request = require('supertest');
 const { createTestServer } = require('./test_setup');
-const { sequelize, User } = require('../models');
-const bcrypt = require('bcryptjs');
+const { /*sequelize,*/ User } = require('../models');
 const { generateToken } = require('../utils/jwt');
 
 describe('User API', () => {
   let app;
   let adminToken;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     app = createTestServer();
-    //await sequelize.sync({ force: true });
-
-    const admin = await User.create({
-      name: 'Admin',
-      email: 'admin@example.com',
-      password: await bcrypt.hash('pass123', 10),
-      role: 'admin',
-    });
+    const admin = await User.findOne({ where: { email: 'admin@medgestor.com' } });
     adminToken = generateToken({ id: admin.id, role: 'admin' });
-  });
-
-  afterEach(async () => {
-    await sequelize.close();
   });
 
   it('should create a doctor with valid CRM', async () => {
@@ -36,8 +24,9 @@ describe('User API', () => {
         password: 'pass123',
         role: 'doctor',
         crm: 'CRM/SP-123456',
-      });
-    expect(res.statusCode).toBe(201);
+      })
+      .expect(201);
+
     expect(res.body.user.role).toBe('doctor');
     expect(res.body.user.email).toBe('doctor@example.com');
   });
@@ -48,12 +37,13 @@ describe('User API', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Test Doctor',
-        email: 'doctor@example.com',
+        email: 'doctor2@example.com',
         password: 'pass123',
         role: 'doctor',
-      });
-    expect(res.statusCode).toBe(400);
-    expect(res.body.error).toContain('CRM is required');
+      })
+      .expect(400);
+
+    expect(res.body.error).toBe('CRM is required for doctors');
   });
 
   it('should fail to create non-doctor with CRM', async () => {
@@ -66,10 +56,9 @@ describe('User API', () => {
         password: 'pass123',
         role: 'secretary',
         crm: 'CRM/SP-123456',
-      });
-    expect(res.statusCode).toBe(400);
-    expect(res.body.error).toContain('CRM must be null');
+      })
+      .expect(400);
+
+    expect(res.body.error).toBe('CRM must be null for non-doctors');
   });
 });
-
-module.exports = describe;

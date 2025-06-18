@@ -7,12 +7,12 @@ module.exports = {
     await queryInterface.bulkDelete('patients', null, {});
 
     const patients = Array.from({ length: 5 }, () => {
-      const rawCpf = faker.string.numeric(11);
-      const formattedCpf = `${rawCpf.substring(0, 3)}.${rawCpf.substring(3, 6)}.${rawCpf.substring(6, 9)}-${rawCpf.substring(9, 11)}`;
+      const cpfRaw = faker.string.numeric({ length: 11 });
+      const cpfFormatted = `${cpfRaw.slice(0, 3)}.${cpfRaw.slice(3, 6)}.${cpfRaw.slice(6, 9)}-${cpfRaw.slice(9, 11)}`;
       return {
         id: uuidv4(),
         name: faker.person.fullName(),
-        cpf: formattedCpf, // CPF formatado corretamente
+        cpf: cpfFormatted,
         email: faker.internet.email(),
         phone: faker.phone.number('(##) #####-####'),
         allergies: faker.helpers.arrayElement(['Penicilina', 'Amendoim', 'Látex', null]),

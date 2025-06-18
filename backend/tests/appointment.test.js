@@ -24,13 +24,13 @@ describe('Appointment API', () => {
       .send({
         doctorId: doctor.id,
         patientId: patient.id,
-        date: '2025-06-18T10:00:00Z',
+        date: '2025-06-20T10:00:00Z',
         type: 'initial',
         insurance: false,
       })
       .expect('Content-Type', /json/)
       .expect(201);
-    expect(new Date(res.body.date).toISOString()).toMatch(/2023-06-20T10:00:00/);
+    expect(new Date(res.body.date).toISOString()).toMatch(/2025-06-20T10:00:00Z/);
   });
 
   it('should fail with invalid date', async () => {
@@ -47,7 +47,7 @@ describe('Appointment API', () => {
       .expect('Content-Type', /json/)
       .expect(400);
 
-    expect(res.body.error).toBe('Data deve ser futura');
+    expect(res.body.error).toBe("\"date\" must be greater than \"now\"");
   });
 
   it('should get all appointments', async () => {
