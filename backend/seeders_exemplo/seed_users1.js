@@ -1,12 +1,11 @@
 'use strict';
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const { faker } = require('@faker-js/faker');
 
 module.exports = {
   async up(queryInterface) {
+    // Limpar tabela antes de inserir
     await queryInterface.bulkDelete('users', null, {});
-    // Manter o salt em 10 para consistência com o modelo User.js
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(process.env.SEED_DEFAULT_PASSWORD || 'pass123', salt);
 
@@ -23,18 +22,18 @@ module.exports = {
       },
       {
         id: uuidv4(),
-        name: faker.person.fullName(),
-        email: faker.internet.email({ provider: 'medgestor.com' }),
+        name: 'Dr. João Silva',
+        email: 'joao.silva@medgestor.com',
         password: hashedPassword,
         role: 'doctor',
-        crm: `CRM/SP-${faker.string.numeric(6)}`,
+        crm: 'CRM/SP-123456',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: uuidv4(),
-        name: faker.person.fullName(),
-        email: faker.internet.email({ provider: 'medgestor.com' }),
+        name: 'Maria Oliveira',
+        email: 'maria.oliveira@medgestor.com',
         password: hashedPassword,
         role: 'secretary',
         crm: null,

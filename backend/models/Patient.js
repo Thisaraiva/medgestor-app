@@ -17,9 +17,12 @@ const Patient = sequelize.define('Patient', {
     unique: true,
     validate: {
       isCPFValid(value) {
-        if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(value)) {
-          throw new Error('CPF must be in format 123.456.789-00');
+        // Remover pontos e traço antes de validar o formato numérico e o tamanho
+        const cleanedCPF = value.replace(/[.-]/g, '');
+        if (!/^\d{11}$/.test(cleanedCPF)) {
+          throw new Error('CPF deve conter 11 dígitos numéricos.');
         }
+        // Opcional: Adicionar uma validação de CPF mais robusta aqui se desejar (ex: algoritmo de validação de CPF)
       },
     },
   },
@@ -40,5 +43,12 @@ const Patient = sequelize.define('Patient', {
   timestamps: true,
   tableName: 'patients',
 });
+
+// Adicionar a função associate
+Patient.associate = (models) => {
+  Patient.hasMany(models.Appointment, { foreignKey: 'patientId', as: 'patientAppointments' });
+  Patient.hasMany(models.MedicalRecord, { foreignKey: 'patientId' });
+  Patient.hasMany(models.Prescription, { foreignKey: 'patientId' });
+};
 
 module.exports = Patient;

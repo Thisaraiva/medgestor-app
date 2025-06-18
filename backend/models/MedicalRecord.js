@@ -32,4 +32,9 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
   tableName: 'medical_records',
 });
 
+// Adicionar a função associate
+MedicalRecord.associate = (models) => {
+  MedicalRecord.belongsTo(models.Patient, { foreignKey: 'patientId' });
+};
+
 module.exports = MedicalRecord;

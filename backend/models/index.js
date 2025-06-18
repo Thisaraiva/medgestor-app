@@ -13,7 +13,7 @@ fs.readdirSync(__dirname)
     models[model.name] = model;
   });
 
-// Define associações
+/*// Define associações
 const { User, Patient, Appointment, MedicalRecord, Prescription } = models;
 
 // Associações corrigidas
@@ -29,6 +29,7 @@ MedicalRecord.belongsTo(Patient, { foreignKey: 'patientId' });
 Patient.hasMany(Prescription, { foreignKey: 'patientId' });
 Prescription.belongsTo(Patient, { foreignKey: 'patientId' });
 Prescription.belongsTo(User, { as: 'doctor', foreignKey: 'doctorId' });
+*/
 
 // Sincroniza modelos com o banco
 Object.values(models).forEach(model => {

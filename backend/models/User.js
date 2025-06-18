@@ -36,6 +36,9 @@ const User = sequelize.define('User', {
         if (this.role === 'doctor' && !value) {
           throw new Error('CRM is required for doctors');
         }
+        if (this.role !== 'doctor' && value) {
+            throw new Error('CRM must be null for non-doctors');
+        }
       },
     },
   },
@@ -50,5 +53,11 @@ const User = sequelize.define('User', {
     },
   },
 });
+
+// Adicionar a função associate
+User.associate = (models) => {
+  User.hasMany(models.Appointment, { foreignKey: 'doctorId', as: 'doctorAppointments' });
+  User.hasMany(models.Prescription, { foreignKey: 'doctorId', as: 'doctorPrescriptions' });
+};
 
 module.exports = User;

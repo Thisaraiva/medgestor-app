@@ -65,4 +65,10 @@ const Prescription = sequelize.define('Prescription', {
   tableName: 'prescriptions',
 });
 
+// Adicionar a função associate
+Prescription.associate = (models) => {
+  Prescription.belongsTo(models.Patient, { foreignKey: 'patientId' });
+  Prescription.belongsTo(models.User, { as: 'doctor', foreignKey: 'doctorId' });
+};
+
 module.exports = Prescription;

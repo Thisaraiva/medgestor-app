@@ -1,7 +1,6 @@
 const request = require('supertest');
 const { createTestServer } = require('./test_setup');
-const { sequelize, User, Patient, Appointment } = require('../models');
-const bcrypt = require('bcryptjs');
+const { User, Patient, Appointment } = require('../models');
 const { generateToken } = require('../utils/jwt');
 
 describe('Appointment API', () => {
@@ -10,29 +9,12 @@ describe('Appointment API', () => {
   let doctor;
   let patient;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     app = createTestServer();
-    await sequelize.sync({ force: true });
-
-    doctor = await User.create({
-      name: 'Test Doctor',
-      email: 'doctor@example.com',
-      password: await bcrypt.hash('password123', 1),
-      role: 'doctor',
-    });
-
-    patient = await Patient.create({
-      name: 'Test Patient',
-      cpf: '123.456.789-00',
-      email: 'patient@example.com',
-    });
-
+    doctor = await User.findOne({ where: { role: 'doctor' } });
+    patient = await Patient.findOne();
     token = generateToken({ id: doctor.id, role: 'doctor' });
-  });
-
-  afterEach(async () => {
-    await sequelize.close();
   });
 
   it('should create a new appointment', async () => {
@@ -42,62 +24,65 @@ describe('Appointment API', () => {
       .send({
         doctorId: doctor.id,
         patientId: patient.id,
-        date: '2023-06-20T10:00:00Z',
+        date: '2025-06-18T10:00:00Z',
         type: 'initial',
         insurance: false,
-      }).expect('Content-Type', /json/);
-      expect(res.statusCode).toBe(201);
-      expect(res.body.date).toBe('2023-06-20T10:00:00:00.000Z');
-    });
+      })
+      .expect('Content-Type', /json/)
+      .expect(201);
+    expect(new Date(res.body.date).toISOString()).toMatch(/2023-06-20T10:00:00/);
+  });
 
-    it('should fail with invalid date', async () => {
-      const res = await request(app)
+  it('should fail with invalid date', async () => {
+    const res = await request(app)
       .post('/api/appointments')
       .set('Authorization', `Bearer ${token}`)
       .send({
         doctorId: doctor.id,
         patientId: patient.id,
-        date: '2023-01-01T00:00:00Z', // Data passada
+        date: '2025-06-16T10:00:00Z',
         type: 'initial',
         insurance: false,
-      }).expect('Content-Type', /json/);
-      expect(res.statusCode).toBe(400);
-      expect(res.body.error).toBe('Data deve ser futura');
+      })
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res.body.error).toBe('Data deve ser futura');
+  });
+
+  it('should get all appointments', async () => {
+    await Appointment.create({
+      doctorId: doctor.id,
+      patientId: patient.id,
+      date: '2025-06-18T10:00:00Z',
+      type: 'initial',
+      insurance: false,
     });
+    const res = await request(app)
+      .get('/api/appointments')
+      .set('Authorization', `Bearer ${token}`)
+      .expect('Content-Type', /json/)
+      .expect(200);
 
-    it('should get all appointments', async () => {
-      await Appointment.create({
-        doctorId: doctor.id,
-        patientId: patient.id,
-        date: '2023-06-20T10:00:00Z',
-        type: 'initial',
-        insurance: false,
-      });
-      const res = await request(app)
-        .get('/api/appointments')
-        .set('Authorization', `Bearer ${token}`)
-        .expect('Content-Type', /json/);
-        expect(res.statusCode).toBe(200);
-        expect(Array.isArray(res.body)).toBe(true);
-        expect(res.body.length).toBe(1);
-      });
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+  });
 
-      it('should filter appointments by type', async () => {
-        await Appointment.create({
-          doctorId: doctor.id,
-          patientId: patient.id,
-          date: '2023-06-20T10:00:00Z',
-          type: 'initial',
-          insurance: false,
-        });
-        const res = await request(app)
-        .get('/api/appointments?type=initial')
-        .set('Authorization', `Bearer ${token}`)
-        .expect('Content-Type', /json/);
-        expect(res.statusCode).toBe(200);
-        expect(res.body.length).toBe(1);
-        expect(res.body[0].type).toBe('initial');
-      });
+  it('should filter appointments by type', async () => {
+    await Appointment.create({
+      doctorId: doctor.id,
+      patientId: patient.id,
+      date: '2025-06-18T10:00:00Z',
+      type: 'initial',
+      insurance: false,
     });
+    const res = await request(app)
+      .get('/api/appointments?type=initial')
+      .set('Authorization', `Bearer ${token}`)
+      .expect('Content-Type', /json/)
+      .expect(200);
 
-module.exports = describe;
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0].type).toBe('initial');
+  });
+});

@@ -40,4 +40,10 @@ const Appointment = sequelize.define('Appointment', {
   tableName: 'appointments',
 });
 
+// Adicionar a função associate
+Appointment.associate = (models) => {
+  Appointment.belongsTo(models.User, { as: 'doctor', foreignKey: 'doctorId' });
+  Appointment.belongsTo(models.Patient, { as: 'patient', foreignKey: 'patientId' });
+};
+
 module.exports = Appointment;

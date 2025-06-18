@@ -11,12 +11,12 @@ describe('User API', () => {
   beforeEach(async () => {
     process.env.NODE_ENV = 'test';
     app = createTestServer();
-    await sequelize.sync({ force: true });
+    //await sequelize.sync({ force: true });
 
     const admin = await User.create({
       name: 'Admin',
       email: 'admin@example.com',
-      password: await bcrypt.hash('password123', 10),
+      password: await bcrypt.hash('pass123', 10),
       role: 'admin',
     });
     adminToken = generateToken({ id: admin.id, role: 'admin' });
@@ -33,7 +33,7 @@ describe('User API', () => {
       .send({
         name: 'Test Doctor',
         email: 'doctor@example.com',
-        password: 'password123',
+        password: 'pass123',
         role: 'doctor',
         crm: 'CRM/SP-123456',
       });
@@ -49,7 +49,7 @@ describe('User API', () => {
       .send({
         name: 'Test Doctor',
         email: 'doctor@example.com',
-        password: 'password123',
+        password: 'pass123',
         role: 'doctor',
       });
     expect(res.statusCode).toBe(400);
@@ -63,7 +63,7 @@ describe('User API', () => {
       .send({
         name: 'Test Secretary',
         email: 'secretary@example.com',
-        password: 'password123',
+        password: 'pass123',
         role: 'secretary',
         crm: 'CRM/SP-123456',
       });

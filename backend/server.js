@@ -31,7 +31,7 @@ const server = app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();
     if (process.env.NODE_ENV === 'test') {
-      await sequelize.sync({ force: true });
+      //await sequelize.sync({ force: true });
     }
     console.log(`Server running on port ${PORT}`);
   } catch (err) {
