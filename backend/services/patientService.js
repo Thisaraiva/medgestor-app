@@ -1,27 +1,37 @@
 const { Patient } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
+const { Op } = require('sequelize');
+const Joi = require('joi');
 
-const validatePatient = ({ name, cpf }) => {
-  if (!name || name.length < 3) {
-    throw new ValidationError('Nome deve ter pelo menos 3 caracteres');
-  }
-  if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(cpf)) {
-    throw new ValidationError('CPF deve estar no formato 123.456.789-00');
-  }
-};
+const patientSchema = Joi.object({
+  name: Joi.string().min(3).required(),
+  cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).required(),
+  email: Joi.string().email().required(),
+  phone: Joi.string().required(),
+  allergies: Joi.string().allow(null, ''),
+});
 
-const createPatient = async ({ name, cpf, email, phone, allergies }) => {
-  validatePatient({ name, cpf });
-  return Patient.create({ name, cpf, email, phone, allergies });
+const createPatient = async (data) => {
+  const { error } = patientSchema.validate(data);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+
+  const existingPatient = await Patient.findOne({ where: { cpf: data.cpf } });
+  if (existingPatient) {
+    throw new ValidationError('CPF já registrado');
+  }
+
+  return Patient.create(data);
 };
 
 const getPatients = async ({ cpf, name }) => {
   const where = {};
-  if (cpf) { 
-    where.cpf = cpf; 
+  if (cpf) {
+    where.cpf = cpf;
   }
   if (name) {
-    where.name = { [Patient.sequelize.Op.iLike]: `%${name}%` };
+    where.name = { [Op.iLike]: `%${name}%` };
   }
   return Patient.findAll({ where });
 };
@@ -30,19 +40,30 @@ const getPatientById = async (id) => {
   const patient = await Patient.findByPk(id);
   if (!patient) {
     throw new NotFoundError('Paciente não encontrado');
+
   }
   return patient;
 };
 
-const updatePatient = async (id, { name, email, phone, allergies }) => {
+const updatePatient = async (id, data) => {
   const patient = await Patient.findByPk(id);
   if (!patient) {
     throw new NotFoundError('Paciente não encontrado');
   }
-  if (name || email) {
-    validatePatient({ name: name || patient.name, cpf: patient.cpf });
+
+  const { error } = patientSchema.validate({ ...data, cpf: data.cpf || patient.cpf, name: data.name || patient.name });
+  if (error) {
+    throw new ValidationError(error.details[0].message);
   }
-  return patient.update({ name, email, phone, allergies });
+
+  if (data.cpf && data.cpf !== patient.cpf) {
+    const existingPatient = await Patient.findOne({ where: { cpf: data.cpf } });
+    if (existingPatient) {
+      throw new ValidationError('CPF já registrado');
+    }
+  }
+
+  return patient.update(data);
 };
 
 const deletePatient = async (id) => {

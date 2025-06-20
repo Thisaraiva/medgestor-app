@@ -1,18 +1,20 @@
 const asyncHandler = require('../middleware/controllerMiddleware');
 const recordService = require('../services/recordService');
+const { ValidationError } = require('../errors/errors');
 const Joi = require('joi');
 
 const createSchema = Joi.object({
   patientId: Joi.string().uuid().required(),
-  diagnosis: Joi.string().allow(null),
-  treatment: Joi.string().allow(null),
-  notes: Joi.string().allow(null),
+  diagnosis: Joi.string().min(1).required(),
+  treatment: Joi.string().allow(null, ''),
+  notes: Joi.string().allow(null, ''),
+  date: Joi.date().iso().required(),
 });
 
 const createRecord = asyncHandler(async (req, res) => {
   const { error, value } = createSchema.validate(req.body);
   if (error) {
-    throw new Error(error.details[0].message);
+    throw new ValidationError(error.details[0].message);
   }
 
   const record = await recordService.createRecord(value);
@@ -20,8 +22,14 @@ const createRecord = asyncHandler(async (req, res) => {
 });
 
 const getRecordsByPatient = asyncHandler(async (req, res) => {
-  const records = await recordService.getRecordsByPatient(req.params.patientId);
-  res.json(records);
+  const { date } = req.query;
+  const records = await recordService.getRecordsByPatient(req.params.patientId, { date });
+  res.status(200).json(records);
 });
 
-module.exports = { createRecord, getRecordsByPatient };
+const getRecordById = asyncHandler(async (req, res) => {
+  const record = await recordService.getRecordById(req.params.id);
+  res.status(200).json(record);
+});
+
+module.exports = { createRecord, getRecordsByPatient, getRecordById };

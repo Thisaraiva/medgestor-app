@@ -1,36 +1,35 @@
 const { Prescription, Patient, User } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
+const Joi = require('joi');
 
-const validatePrescription = ({ patientId, doctorId, medication, dateIssued }) => {
-  if (!patientId || !doctorId) {
-    throw new ValidationError('patientId e doctorId são obrigatórios');
-  }
-  if (!medication) {
-    throw new ValidationError('Medicamento é obrigatório');
-  }
-  if (!dateIssued || new Date(dateIssued) > new Date()) {
-    throw new ValidationError('Data de emissão deve ser válida e não futura');
-  }
-};
+const prescriptionSchema = Joi.object({
+  patientId: Joi.string().uuid().required(),
+  medication: Joi.string().required(),
+  dosage: Joi.string().allow(null, ''),
+  frequency: Joi.string().allow(null, ''),
+  duration: Joi.string().allow(null, ''),
+  administrationInstructions: Joi.string().allow(null, ''),
+  notes: Joi.string().allow(null, ''),
+  dateIssued: Joi.date().iso().required(),
+  status: Joi.string().valid('active', 'inactive').optional(),
+});
 
-const createPrescription = async ({ patientId, doctorId, medication, dosage, frequency, duration, administrationInstructions, notes, dateIssued }) => {
-  validatePrescription({ patientId, doctorId, medication, dateIssued });
-  const patient = await Patient.findByPk(patientId);
+const createPrescription = async (data, doctorId) => {
+  const { error } = prescriptionSchema.validate({ ...data, doctorId });
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+
+  const patient = await Patient.findByPk(data.patientId);
   const doctor = await User.findByPk(doctorId);
-  if (!patient || !doctor) {
-    throw new NotFoundError('Paciente ou médico não encontrado');
+  if (!patient) {
+    throw new NotFoundError('Paciente não encontrado');
   }
-  return Prescription.create({
-    patientId,
-    doctorId,
-    medication,
-    dosage,
-    frequency,
-    duration,
-    administrationInstructions,
-    notes,
-    dateIssued,
-  });
+  if (!doctor || doctor.role !== 'doctor') {
+    throw new NotFoundError('Médico não encontrado');
+  }
+
+  return Prescription.create({ ...data, doctorId });
 };
 
 const getPrescriptionsByPatient = async (patientId, { status, dateIssued }) => {
@@ -41,6 +40,7 @@ const getPrescriptionsByPatient = async (patientId, { status, dateIssued }) => {
   if (dateIssued) {
     where.dateIssued = dateIssued;
   }
+
   const prescriptions = await Prescription.findAll({
     where,
     include: [
@@ -48,10 +48,31 @@ const getPrescriptionsByPatient = async (patientId, { status, dateIssued }) => {
       { model: User, as: 'doctor', attributes: ['id', 'name'] },
     ],
   });
-  if (!prescriptions.length && !await Patient.findByPk(patientId)) {
+
+  if (!prescriptions.length && !(await Patient.findByPk(patientId))) {
     throw new NotFoundError('Paciente não encontrado');
   }
   return prescriptions;
 };
 
-module.exports = { createPrescription, getPrescriptionsByPatient };
+const updatePrescription = async (id, data, doctorId) => {
+  const prescription = await Prescription.findByPk(id);
+  if (!prescription) {
+    throw new NotFoundError('Prescrição não encontrada');
+  }
+
+  const updateData = { ...data, doctorId };
+  const { error } = prescriptionSchema.validate(updateData);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+
+  const patient = await Patient.findByPk(data.patientId || prescription.patientId);
+  if (!patient) {
+    throw new NotFoundError('Paciente não encontrado');
+  }
+
+  return prescription.update(updateData);
+};
+
+module.exports = { createPrescription, getPrescriptionsByPatient, updatePrescription };

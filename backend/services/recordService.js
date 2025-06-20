@@ -1,30 +1,58 @@
 const { MedicalRecord, Patient } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
+const Joi = require('joi');
 
-const validateRecord = ({ patientId }) => {
-  if (!patientId) {
-    throw new ValidationError('patientId é obrigatório');
+const recordSchema = Joi.object({
+  patientId: Joi.string().uuid().required(),
+  diagnosis: Joi.string().min(1).required(),
+  treatment: Joi.string().allow(null, ''),
+  notes: Joi.string().allow(null, ''),
+  date: Joi.date().iso().required(),
+});
+
+const createRecord = async (data) => {
+  const { error } = recordSchema.validate(data);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
   }
-};
 
-const createRecord = async ({ patientId, diagnosis, treatment, notes }) => {
-  validateRecord({ patientId });
-  const patient = await Patient.findByPk(patientId);
+  const patient = await Patient.findByPk(data.patientId);
   if (!patient) {
     throw new NotFoundError('Paciente não encontrado');
   }
-  return MedicalRecord.create({ patientId, diagnosis, treatment, notes });
+
+  return MedicalRecord.create(data);
 };
 
-const getRecordsByPatient = async (patientId) => {
+const getRecordsByPatient = async (patientId, { date }) => {
+  const where = { patientId };
+  if (date) {
+    where.date = date;
+  }
+
   const records = await MedicalRecord.findAll({
-    where: { patientId },
-    include: { model: Patient, attributes: ['id', 'name'] },
+    where,
+    include: [
+      { model: Patient, attributes: ['id', 'name'] },
+    ],
   });
-  if (!records.length && !await Patient.findByPk(patientId)) {
+
+  if (!records.length && !(await Patient.findByPk(patientId))) {
     throw new NotFoundError('Paciente não encontrado');
   }
   return records;
 };
 
-module.exports = { createRecord, getRecordsByPatient };
+const getRecordById = async (id) => {
+  const record = await MedicalRecord.findByPk(id, {
+    include: [
+      { model: Patient, attributes: ['id', 'name'] },
+    ],
+  });
+  if (!record) {
+    throw new NotFoundError('Registro médico não encontrado');
+  }
+  return record;
+};
+
+module.exports = { createRecord, getRecordsByPatient, getRecordById };

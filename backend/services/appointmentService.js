@@ -1,29 +1,45 @@
 const { Appointment, User, Patient } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
+//const { Op } = require('sequelize');
+const Joi = require('joi');
 
-const validateAppointment = ({ doctorId, patientId, date, type }) => {
-  if (new Date(date) <= new Date()) {
-    throw new ValidationError('A data deve ser futura');
+const appointmentSchema = Joi.object({
+  doctorId: Joi.string().uuid().required(),
+  patientId: Joi.string().uuid().required(),
+  date: Joi.date().iso().greater('now').required(),
+  type: Joi.string().valid('initial', 'return').required(),
+  insurance: Joi.boolean().allow(null),
+});
+
+const createAppointment = async (data) => {
+  const { error } = appointmentSchema.validate(data);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
   }
-  if (!['initial', 'return'].includes(type)) {
-    throw new ValidationError('Tipo de consulta inválido');
+
+  const doctor = await User.findByPk(data.doctorId);
+  const patient = await Patient.findByPk(data.patientId);
+  if (!doctor || doctor.role !== 'doctor') {
+    throw new NotFoundError('Médico não encontrado');
   }
-  if (!doctorId || !patientId) {
-    throw new ValidationError('DoctorId e patientId são obrigatórios');
+  if (!patient) {
+    throw new NotFoundError('Paciente não encontrado');
   }
+
+  const conflictingAppointment = await Appointment.findOne({
+    where: {
+      doctorId: data.doctorId,
+      date: data.date,
+    },
+  });
+  if (conflictingAppointment) {
+    throw new ValidationError('Médico já está agendado neste horário');
+  }
+
+  return Appointment.create(data);
 };
 
-const createAppointment = async ({ doctorId, patientId, date, type, insurance }) => {
-  validateAppointment({ doctorId, patientId, date, type });
-  const doctor = await User.findByPk(doctorId);
-  const patient = await Patient.findByPk(patientId);
-  if (!doctor || !patient) {
-    throw new NotFoundError('Médico ou paciente não encontrado');
-  }
-  return Appointment.create({ doctorId, patientId, date, type, insurance });
-};
-
-const getAppointments = async ({ status, type, doctorId }) => {
+const getAppointments = async ({ status, type, doctorId, patientId }) => {
   const where = {};
   if (status) {
     where.status = status;
@@ -34,6 +50,10 @@ const getAppointments = async ({ status, type, doctorId }) => {
   if (doctorId) {
     where.doctorId = doctorId;
   }
+  if (patientId) {
+    where.patientId = patientId;
+  }
+
   return Appointment.findAll({
     where,
     include: [
@@ -61,10 +81,16 @@ const updateAppointment = async (id, data) => {
   if (!appointment) {
     throw new NotFoundError('Consulta não encontrada');
   }
+
+  const updateData = { ...data };
   if (data.date) {
-    validateAppointment({ ...data, doctorId: appointment.doctorId, patientId: appointment.patientId });
+    const { error } = appointmentSchema.validate({ ...data, doctorId: appointment.doctorId, patientId: appointment.patientId });
+    if (error) {
+      throw new ValidationError(error.details[0].message);
+    }
   }
-  return appointment.update(data);
+
+  return appointment.update(updateData);
 };
 
 const deleteAppointment = async (id) => {
