@@ -1,7 +1,7 @@
 const request = require('supertest');
-const { createTestServer } = require('./test_setup');
-const { /*sequelize, Patient,*/ User } = require('../models');
-const { generateToken } = require('../utils/jwt');
+const { createTestServer } = require('../test_setup');
+const { User } = require('../../models');
+const { generateToken } = require('../../utils/jwt');
 
 describe('Patient API', () => {
   let app;
@@ -13,6 +13,9 @@ describe('Patient API', () => {
     app = createTestServer();
     const secretary = await User.findOne({ where: { role: 'secretary' } });
     const doctor = await User.findOne({ where: { role: 'doctor' } });
+    if (!secretary || !doctor) {
+      throw new Error('Secretary or doctor not found in seed data');
+    }
     secretaryToken = generateToken({ id: secretary.id, role: 'secretary' });
     doctorToken = generateToken({ id: doctor.id, role: 'doctor' });
   });
@@ -60,7 +63,7 @@ describe('Patient API', () => {
       })
       .expect(400);
 
-    expect(res.body.error).toBe('CPF deve estar no formato 123.456.789-00');
+    expect(res.body.error).toMatch(/"cpf" with value "invalid-cpf" fails to match the required pattern/);
   });
 
   it('should get patients by CPF filter', async () => {

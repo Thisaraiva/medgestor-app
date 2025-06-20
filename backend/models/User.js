@@ -54,6 +54,8 @@ const User = sequelize.define('User', {
   },
 });
 
+
+
 // Adicionar a função associate
 User.associate = (models) => {
   User.hasMany(models.Appointment, { foreignKey: 'doctorId', as: 'doctorAppointments' });

@@ -6,7 +6,11 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
   moduleFileExtensions: ['js', 'json', 'node'],
-  testMatch: ['<rootDir>/tests/**/*.(spec|test).js'],
+  testMatch: [
+    '<rootDir>/tests/**/*.test.js',
+    '<rootDir>/tests/unit/**/*.unit.test.js',
+    '<rootDir>/tests/integration/**/*.integration.test.js',
+  ],
   setupFilesAfterEnv: ['<rootDir>/tests/test_setup.js'],
   rootDir: '.',
   coverageThreshold: {

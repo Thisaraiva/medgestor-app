@@ -1,7 +1,7 @@
 const request = require('supertest');
-const { createTestServer } = require('./test_setup');
-const { User } = require('../models');
-const { generateToken } = require('../utils/jwt');
+const { createTestServer } = require('../test_setup');
+const { User } = require('../../models');
+const { generateToken } = require('../../utils/jwt');
 
 describe('Auth API', () => {
   let app;

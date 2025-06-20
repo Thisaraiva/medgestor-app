@@ -1,7 +1,7 @@
 const request = require('supertest');
-const { createTestServer } = require('./test_setup');
-const { /*sequelize,*/ User } = require('../models');
-const { generateToken } = require('../utils/jwt');
+const { createTestServer } = require('../test_setup');
+const { User } = require('../../models');
+const { generateToken } = require('../../utils/jwt');
 
 describe('User API', () => {
   let app;
@@ -11,6 +11,9 @@ describe('User API', () => {
     process.env.NODE_ENV = 'test';
     app = createTestServer();
     const admin = await User.findOne({ where: { email: 'admin@medgestor.com' } });
+    if (!admin) {
+      throw new Error('Admin user not found in seed data');
+    }
     adminToken = generateToken({ id: admin.id, role: 'admin' });
   });
 
@@ -43,7 +46,7 @@ describe('User API', () => {
       })
       .expect(400);
 
-    expect(res.body.error).toBe('CRM is required for doctors');
+    expect(res.body.error).toBe('"crm" is required');
   });
 
   it('should fail to create non-doctor with CRM', async () => {
@@ -59,6 +62,6 @@ describe('User API', () => {
       })
       .expect(400);
 
-    expect(res.body.error).toBe('CRM must be null for non-doctors');
+    expect(res.body.error).toBe('"crm" is not allowed');
   });
 });

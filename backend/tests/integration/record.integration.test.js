@@ -1,7 +1,7 @@
 const request = require('supertest');
-    const { createTestServer } = require('./test_setup');
-    const { /*sequelize, MedicalRecord,*/ User, Patient } = require('../models');
-    const { generateToken } = require('../utils/jwt');
+    const { createTestServer } = require('../test_setup');
+    const { /*sequelize, MedicalRecord,*/ User, Patient } = require('../../models');
+    const { generateToken } = require('../../utils/jwt');
 
     describe('Medical Record API', () => {
       let app;

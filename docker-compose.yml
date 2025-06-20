@@ -9,8 +9,19 @@ services:
     env_file:
       - backend/.env
     depends_on:
+      db_test:
+        condition: service_healthy
       db:
-        condition: service_healthy    
+        condition: service_healthy
+    environment:
+      - NODE_ENV=test
+      - DB_NAME_TEST=medgestor_test
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST_TEST=db_test
+      - DB_PORT_TEST=5432
+      - SEED_DEFAULT_PASSWORD=pass123
+      - JWT_SECRET=pBXlIutbAqH8liW667abZxQnoNkvKMRJTGfRu5X6sfA=
     networks:
       - medgestor-network
     restart: unless-stopped
@@ -24,7 +35,7 @@ services:
     environment:
       - REACT_APP_API_URL=http://backend:5000
     depends_on:
-      - backend    
+      - backend
     networks:
       - medgestor-network
     restart: unless-stopped

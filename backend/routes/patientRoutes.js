@@ -12,7 +12,7 @@ const validate = (req, res, next) => {
   next();
 };
 
-router.post('/', authMiddleware, restrictTo('secretary', 'admin'), patientController.createPatient);
+router.post('/', authMiddleware, restrictTo('doctor','secretary', 'admin'), patientController.createPatient);
 router.get('/', authMiddleware, patientController.getPatients);
 router.get(
   '/:id',
@@ -24,7 +24,7 @@ router.get(
 router.put(
   '/:id',
   authMiddleware,
-  restrictTo('secretary', 'admin'),
+  restrictTo('doctor','secretary', 'admin'),
   [param('id').isUUID().withMessage('ID must be a valid UUID')],
   validate,
   patientController.updatePatient
@@ -32,7 +32,7 @@ router.put(
 router.delete(
   '/:id',
   authMiddleware,
-  restrictTo('admin'),
+  restrictTo('doctor','admin'),
   [param('id').isUUID().withMessage('ID must be a valid UUID')],
   validate,
   patientController.deletePatient
