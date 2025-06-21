@@ -1,18 +1,34 @@
 const { Appointment, User, Patient } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
-//const { Op } = require('sequelize');
 const Joi = require('joi');
+const { parse, format, isValid } = require('date-fns');
+const { ptBR } = require('date-fns/locale');
 
 const appointmentSchema = Joi.object({
   doctorId: Joi.string().uuid().required(),
   patientId: Joi.string().uuid().required(),
-  date: Joi.date().iso().greater('now').required(),
+  date: Joi.date().iso().required(), // Aceita data em formato ISO após conversão
   type: Joi.string().valid('initial', 'return').required(),
   insurance: Joi.boolean().allow(null),
 });
 
 const createAppointment = async (data) => {
-  const { error } = appointmentSchema.validate(data);
+  // Validar data pt-BR (dd/MM/yyyy HH:mm)
+  // Usar uma data de referência consistente para parsear
+  const parsedDate = parse(data.date, 'dd/MM/yyyy HH:mm', new Date(), { locale: ptBR });
+  if (!isValid(parsedDate)) {
+    throw new ValidationError('Formato de data inválido');
+  }
+  if (parsedDate <= new Date()) { // Comparar com a data/hora atual
+    throw new ValidationError('Data deve ser futura');
+  }
+
+  // Converter para ISO 8601
+  const isoDate = format(parsedDate, "yyyy-MM-dd'T'HH:mm:ss'Z'");
+  const validatedData = { ...data, date: isoDate };
+
+  // Validar com Joi
+  const { error } = appointmentSchema.validate(validatedData);
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
@@ -29,14 +45,16 @@ const createAppointment = async (data) => {
   const conflictingAppointment = await Appointment.findOne({
     where: {
       doctorId: data.doctorId,
-      date: data.date,
+      date: isoDate,
     },
   });
   if (conflictingAppointment) {
     throw new ValidationError('Médico já está agendado neste horário');
   }
 
-  return Appointment.create(data);
+  const appointment = await Appointment.create(validatedData);
+  // Retornar data formatada em pt-BR
+  return { ...appointment.toJSON(), date: format(new Date(appointment.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }) };
 };
 
 const getAppointments = async ({ status, type, doctorId, patientId }) => {
@@ -54,13 +72,19 @@ const getAppointments = async ({ status, type, doctorId, patientId }) => {
     where.patientId = patientId;
   }
 
-  return Appointment.findAll({
+  const appointments = await Appointment.findAll({
     where,
     include: [
       { model: User, as: 'doctor', attributes: ['id', 'name'] },
       { model: Patient, as: 'patient', attributes: ['id', 'name'] },
     ],
   });
+
+  // Retornar datas formatadas em pt-BR
+  return appointments.map((appt) => ({
+    ...appt.toJSON(),
+    date: format(new Date(appt.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+  }));
 };
 
 const getAppointmentById = async (id) => {
@@ -73,7 +97,10 @@ const getAppointmentById = async (id) => {
   if (!appointment) {
     throw new NotFoundError('Consulta não encontrada');
   }
-  return appointment;
+  return {
+    ...appointment.toJSON(),
+    date: format(new Date(appointment.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+  };
 };
 
 const updateAppointment = async (id, data) => {
@@ -84,13 +111,31 @@ const updateAppointment = async (id, data) => {
 
   const updateData = { ...data };
   if (data.date) {
-    const { error } = appointmentSchema.validate({ ...data, doctorId: appointment.doctorId, patientId: appointment.patientId });
-    if (error) {
-      throw new ValidationError(error.details[0].message);
+    // Usar uma data de referência consistente para parsear
+    const parsedDate = parse(data.date, 'dd/MM/yyyy HH:mm', new Date(), { locale: ptBR });
+    if (!isValid(parsedDate)) {
+      throw new ValidationError('Formato de data inválido');
     }
+    if (parsedDate <= new Date()) { // Comparar com a data/hora atual
+      throw new ValidationError('Data deve ser futura');
+    }
+    updateData.date = format(parsedDate, "yyyy-MM-dd'T'HH:mm:ss'Z'");
   }
 
-  return appointment.update(updateData);
+  const { error } = appointmentSchema.validate({
+    ...updateData,
+    doctorId: updateData.doctorId || appointment.doctorId,
+    patientId: updateData.patientId || appointment.patientId,
+  });
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+
+  await appointment.update(updateData);
+  return {
+    ...appointment.toJSON(),
+    date: format(new Date(appointment.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+  };
 };
 
 const deleteAppointment = async (id) => {

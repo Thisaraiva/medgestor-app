@@ -7,13 +7,16 @@ module.exports = {
         await queryInterface.bulkDelete('medical_records', null, {});
 
         const patients = await queryInterface.sequelize.query('SELECT id FROM patients');
+        // Extrai apenas os IDs dos pacientes
+        const patientIds = patients[0].map(p => p.id);
 
         const records = Array.from({ length: 3 }, () => ({
             id: uuidv4(),
-            patientId: faker.helpers.arrayElement(patients[0]).id,
+            patientId: faker.helpers.arrayElement(patientIds), // Usar IDs válidos de pacientes
             diagnosis: faker.lorem.sentence(),
             treatment: faker.lorem.sentence(),
             notes: faker.lorem.sentence(),
+            date: faker.date.recent(), // Adicionado o campo 'date' com data recente
             createdAt: new Date(),
             updatedAt: new Date(),
         }));

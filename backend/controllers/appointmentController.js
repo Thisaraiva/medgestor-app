@@ -1,20 +1,21 @@
 const asyncHandler = require('../middleware/controllerMiddleware');
 const appointmentService = require('../services/appointmentService');
+const { ValidationError } = require('../errors/errors');
 //const { sendAppointmentConfirmation } = require('../utils/email');
 const Joi = require('joi');
 
 const createSchema = Joi.object({
   doctorId: Joi.string().uuid().required(),
   patientId: Joi.string().uuid().required(),
-  date: Joi.date().iso().greater('now').required(),
+  date: Joi.string().pattern(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/).required(),
   type: Joi.string().valid('initial', 'return').required(),
-  insurance: Joi.string().allow(null),
+  insurance: Joi.boolean().allow(null),
 });
 
 const createAppointment = asyncHandler(async (req, res) => {
   const { error, value } = createSchema.validate(req.body);
   if (error) {
-    throw new Error(error.details[0].message);
+    throw new ValidationError(error.details[0].message);
   }
 
   const appointment = await appointmentService.createAppointment(value);
@@ -26,24 +27,23 @@ const createAppointment = asyncHandler(async (req, res) => {
 });
 
 const getAppointments = asyncHandler(async (req, res) => {
-  const { status, type, doctorId } = req.query;
-  const appointments = await appointmentService.getAppointments({ status, type, doctorId });
-  res.json(appointments);
+  const { status, type, doctorId, patientId } = req.query;
+  const appointments = await appointmentService.getAppointments({ status, type, doctorId, patientId });
+  res.status(200).json(appointments);
 });
 
 const getAppointmentById = asyncHandler(async (req, res) => {
   const appointment = await appointmentService.getAppointmentById(req.params.id);
-  res.json(appointment);
+  res.status(200).json(appointment);
 });
 
 const updateAppointment = asyncHandler(async (req, res) => {
   const { error, value } = createSchema.validate(req.body, { allowUnknown: true });
   if (error) {
-    throw new Error(error.details[0].message);
+    throw new ValidationError(error.details[0].message);
   }
-
   const appointment = await appointmentService.updateAppointment(req.params.id, value);
-  res.json(appointment);
+  res.status(200).json(appointment);
 });
 
 const deleteAppointment = asyncHandler(async (req, res) => {

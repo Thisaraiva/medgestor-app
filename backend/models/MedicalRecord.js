@@ -27,6 +27,11 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  date: { // Adicionado o campo 'date'
+    type: DataTypes.DATE,
+    allowNull: false, // Tornando-o obrigatório
+    defaultValue: DataTypes.NOW, // Valor padrão para a data atual
+  },
 }, {
   timestamps: true,
   tableName: 'medical_records',
