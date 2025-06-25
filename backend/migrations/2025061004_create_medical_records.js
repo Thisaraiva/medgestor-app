@@ -29,7 +29,7 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      date: { // Adicionado o campo 'date' na migração
+      date: { 
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW,

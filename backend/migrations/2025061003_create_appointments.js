@@ -15,7 +15,7 @@ module.exports = {
           model: 'users',
           key: 'id',
         },
-        onDelete: 'NO ACTION',
+        onDelete: 'CASCADE',
       },
       patientId: {
         type: Sequelize.UUID,
@@ -24,7 +24,7 @@ module.exports = {
           model: 'patients',
           key: 'id',
         },
-        onDelete: 'NO ACTION',
+        onDelete: 'CASCADE',
       },
       date: {
         type: Sequelize.DATE,

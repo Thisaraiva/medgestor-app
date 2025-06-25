@@ -5,11 +5,36 @@ const { ValidationError } = require('../errors/errors');
 const Joi = require('joi');
 
 const createSchema = Joi.object({
-  doctorId: Joi.string().uuid().required(),
-  patientId: Joi.string().uuid().required(),
-  date: Joi.string().pattern(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/).required(),
-  type: Joi.string().valid('initial', 'return').required(),
-  insurance: Joi.boolean().allow(null),
+  doctorId: Joi.string().uuid().required().messages({
+    'string.uuid': 'ID do médico deve ser um UUID válido',
+    'any.required': 'ID do médico é obrigatório',
+  }),
+  patientId: Joi.string().uuid().required().messages({
+    'string.uuid': 'ID do paciente deve ser um UUID válido',
+    'any.required': 'ID do paciente é obrigatório',
+  }),
+  date: Joi.string().pattern(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/).required().messages({
+    'string.pattern.base': 'Data deve estar no formato dd/MM/yyyy HH:mm',
+    'any.required': 'Data é obrigatória',
+  }),
+  type: Joi.string().valid('initial', 'return').required().messages({
+    'any.only': 'Tipo deve ser "initial" ou "return"',
+    'any.required': 'Tipo é obrigatório',
+  }),
+  insurance: Joi.boolean().allow(null).messages({
+    'boolean.base': 'Seguro deve ser um valor booleano',
+  }),
+});
+
+const getSchema = Joi.object({
+  status: Joi.string().optional(),
+  type: Joi.string().valid('initial', 'return').optional(),
+  doctorId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID do médico deve ser um UUID válido',
+  }),
+  patientId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID do paciente deve ser um UUID válido',
+  }),
 });
 
 const createAppointment = asyncHandler(async (req, res) => {
@@ -17,18 +42,19 @@ const createAppointment = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
-
+  if (req.user.role !== 'doctor' && req.user.role !== 'secretary') {
+    throw new ValidationError('Acesso negado: permissão insuficiente', 403);
+  }
   const appointment = await appointmentService.createAppointment(value);
- /* await sendAppointmentConfirmation(req.body.email, {
-    date: appointment.date,
-    doctorName: appointment.doctorId,
-  });*/
   res.status(201).json(appointment);
 });
 
 const getAppointments = asyncHandler(async (req, res) => {
-  const { status, type, doctorId, patientId } = req.query;
-  const appointments = await appointmentService.getAppointments({ status, type, doctorId, patientId });
+  const { error, value } = getSchema.validate(req.query);
+  if (error) {
+    throw new ValidationError(error.details[0].message);
+  }
+  const appointments = await appointmentService.getAppointments(value);
   res.status(200).json(appointments);
 });
 
@@ -41,6 +67,9 @@ const updateAppointment = asyncHandler(async (req, res) => {
   const { error, value } = createSchema.validate(req.body, { allowUnknown: true });
   if (error) {
     throw new ValidationError(error.details[0].message);
+  }
+  if (req.user.role !== 'doctor' && req.user.role !== 'secretary') {
+    throw new ValidationError('Acesso negado: permissão insuficiente', 403);
   }
   const appointment = await appointmentService.updateAppointment(req.params.id, value);
   res.status(200).json(appointment);

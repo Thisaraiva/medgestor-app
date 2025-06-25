@@ -1,149 +1,233 @@
+// Arquivo: C:\Programacao\Projetos\JavaScript\medgestor-app\backend\services\appointmentService.js
+
 const { Appointment, User, Patient } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
-const Joi = require('joi');
-const { parse, format, isValid } = require('date-fns');
+const { sendAppointmentConfirmation } = require('../utils/email');
+const { parse, isValid, isFuture, format, addHours, startOfHour } = require('date-fns'); // Adicionado startOfHour
+const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
+const { Op } = require('sequelize');
 const { ptBR } = require('date-fns/locale');
+const { v4: uuidv4 } = require('uuid');
 
-const appointmentSchema = Joi.object({
-  doctorId: Joi.string().uuid().required(),
-  patientId: Joi.string().uuid().required(),
-  date: Joi.date().iso().required(), // Aceita data em formato ISO após conversão
-  type: Joi.string().valid('initial', 'return').required(),
-  insurance: Joi.boolean().allow(null),
-});
+const APP_TIMEZONE = 'America/Sao_Paulo'; // Fuso horário da aplicação
 
-const createAppointment = async (data) => {
-  // Validar data pt-BR (dd/MM/yyyy HH:mm)
-  // Usar uma data de referência consistente para parsear
-  const parsedDate = parse(data.date, 'dd/MM/yyyy HH:mm', new Date(), { locale: ptBR });
-  if (!isValid(parsedDate)) {
-    throw new ValidationError('Formato de data inválido');
-  }
-  if (parsedDate <= new Date()) { // Comparar com a data/hora atual
-    throw new ValidationError('Data deve ser futura');
-  }
+/**
+ * Valida o formato da data e se ela é futura.
+ * @param {string} dateString A string da data a ser validada (dd/MM/yyyy HH:mm).
+ * @returns {Date} O objeto Date validado em UTC.
+ * @throws {ValidationError} Se o formato da data for inválido ou a data não for futura.
+ */
+const validateAndParseDate = (dateString) => {
+    const parsedDate = parse(dateString, 'dd/MM/yyyy HH:mm', new Date(), { locale: ptBR });
 
-  // Converter para ISO 8601
-  const isoDate = format(parsedDate, "yyyy-MM-dd'T'HH:mm:ss'Z'");
-  const validatedData = { ...data, date: isoDate };
+    if (!isValid(parsedDate)) {
+        throw new ValidationError('Formato de data inválido (esperado: dd/MM/yyyy HH:mm)');
+    }
 
-  // Validar com Joi
-  const { error } = appointmentSchema.validate(validatedData);
-  if (error) {
-    throw new ValidationError(error.details[0].message);
-  }
+    // Convert date from app timezone to UTC before comparison and saving
+    const dateInAppTimezone = zonedTimeToUtc(parsedDate, APP_TIMEZONE);
 
-  const doctor = await User.findByPk(data.doctorId);
-  const patient = await Patient.findByPk(data.patientId);
-  if (!doctor || doctor.role !== 'doctor') {
-    throw new NotFoundError('Médico não encontrado');
-  }
-  if (!patient) {
-    throw new NotFoundError('Paciente não encontrado');
-  }
+    // Ensure comparison is consistent (current time in app timezone)
+    //const nowInAppTimezone = zonedTimeToUtc(new Date(), APP_TIMEZONE);
 
-  const conflictingAppointment = await Appointment.findOne({
-    where: {
-      doctorId: data.doctorId,
-      date: isoDate,
-    },
-  });
-  if (conflictingAppointment) {
-    throw new ValidationError('Médico já está agendado neste horário');
-  }
+    if (!isFuture(dateInAppTimezone)) { // Use isFuture from date-fns
+        throw new ValidationError('Data deve ser futura');
+    }
 
-  const appointment = await Appointment.create(validatedData);
-  // Retornar data formatada em pt-BR
-  return { ...appointment.toJSON(), date: format(new Date(appointment.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }) };
+    // Retorna a data no formato UTC para armazenamento no banco
+    return dateInAppTimezone;
 };
 
-const getAppointments = async ({ status, type, doctorId, patientId }) => {
-  const where = {};
-  if (status) {
-    where.status = status;
-  }
-  if (type) {
-    where.type = type;
-  }
-  if (doctorId) {
-    where.doctorId = doctorId;
-  }
-  if (patientId) {
-    where.patientId = patientId;
-  }
+/**
+ * Formata um objeto Date (UTC) para a string dd/MM/yyyy HH:mm no fuso horário da aplicação.
+ * @param {Date} dateObj O objeto Date em UTC.
+ * @returns {string} A data formatada.
+ */
+const formatUtcDateToLocalString = (dateObj) => {
+    const zonedDate = utcToZonedTime(dateObj, APP_TIMEZONE);
+    return format(zonedDate, 'dd/MM/yyyy HH:mm', { locale: ptBR });
+};
 
-  const appointments = await Appointment.findAll({
-    where,
-    include: [
-      { model: User, as: 'doctor', attributes: ['id', 'name'] },
-      { model: Patient, as: 'patient', attributes: ['id', 'name'] },
-    ],
-  });
+const createAppointment = async (data) => {
+    // 1. Validação do formato da data e se é futura
+    const appointmentDateUtc = validateAndParseDate(data.date);
 
-  // Retornar datas formatadas em pt-BR
-  return appointments.map((appt) => ({
-    ...appt.toJSON(),
-    date: format(new Date(appt.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-  }));
+    // 2. Validação dos IDs e roles
+    const doctor = await User.findByPk(data.doctorId);
+    if (!doctor || doctor.role !== 'doctor') {
+        throw new NotFoundError('Médico não encontrado');
+    }
+
+    const patient = await Patient.findByPk(data.patientId);
+    if (!patient) {
+        throw new NotFoundError('Paciente não encontrado');
+    }
+
+    // 3. Checar conflitos de agendamento (dentro da mesma hora)
+    // Pega o início da hora do agendamento
+    const startOfAppointmentHour = startOfHour(appointmentDateUtc);
+    // Pega o fim da hora do agendamento (59 minutos e 59 segundos do mesmo início de hora)
+    const endOfAppointmentHour = addHours(startOfAppointmentHour, 1);
+
+    const existingAppointment = await Appointment.findOne({
+        where: {
+            doctorId: data.doctorId,
+            date: {
+                [Op.between]: [startOfAppointmentHour, endOfAppointmentHour],
+            },
+        },
+    });
+
+    if (existingAppointment) {
+        throw new ValidationError('Médico já está agendado neste horário');
+    }
+
+    const appointment = await Appointment.create({
+        id: uuidv4(),
+        doctorId: data.doctorId,
+        patientId: data.patientId,
+        date: appointmentDateUtc, // Salva a data em UTC
+        type: data.type,
+        insurance: data.insurance,
+    });
+
+    await sendAppointmentConfirmation(patient.email, doctor.name, formatUtcDateToLocalString(appointment.date));
+
+    // Retorna a data no formato de string local para a API
+    return {
+        ...appointment.toJSON(),
+        date: formatUtcDateToLocalString(appointment.date),
+        doctor: { id: doctor.id, name: doctor.name },
+        patient: { id: patient.id, name: patient.name },
+    };
+};
+
+const getAppointments = async (filters) => {
+    const where = {};
+    if (filters.type) {
+        where.type = filters.type;
+    }
+    if (filters.doctorId) {
+        where.doctorId = filters.doctorId;
+    }
+    if (filters.patientId) {
+        where.patientId = filters.patientId;
+    }
+
+    const appointments = await Appointment.findAll({
+        where,
+        include: [
+            { model: User, as: 'doctor', attributes: ['id', 'name'] },
+            { model: Patient, as: 'patient', attributes: ['id', 'name'] },
+        ],
+    });
+
+    return appointments.map(appointment => ({
+        ...appointment.toJSON(),
+        date: formatUtcDateToLocalString(appointment.date), // Formata para a string local
+    }));
 };
 
 const getAppointmentById = async (id) => {
-  const appointment = await Appointment.findByPk(id, {
-    include: [
-      { model: User, as: 'doctor', attributes: ['id', 'name'] },
-      { model: Patient, as: 'patient', attributes: ['id', 'name'] },
-    ],
-  });
-  if (!appointment) {
-    throw new NotFoundError('Consulta não encontrada');
-  }
-  return {
-    ...appointment.toJSON(),
-    date: format(new Date(appointment.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-  };
+    const appointment = await Appointment.findByPk(id, {
+        include: [
+            { model: User, as: 'doctor', attributes: ['id', 'name'] },
+            { model: Patient, as: 'patient', attributes: ['id', 'name'] },
+        ],
+    });
+
+    if (!appointment) {
+        throw new NotFoundError('Consulta não encontrada');
+    }
+
+    return {
+        ...appointment.toJSON(),
+        date: formatUtcDateToLocalString(appointment.date), // Formata para a string local
+    };
 };
 
 const updateAppointment = async (id, data) => {
-  const appointment = await Appointment.findByPk(id);
-  if (!appointment) {
-    throw new NotFoundError('Consulta não encontrada');
-  }
-
-  const updateData = { ...data };
-  if (data.date) {
-    // Usar uma data de referência consistente para parsear
-    const parsedDate = parse(data.date, 'dd/MM/yyyy HH:mm', new Date(), { locale: ptBR });
-    if (!isValid(parsedDate)) {
-      throw new ValidationError('Formato de data inválido');
+    const appointment = await Appointment.findByPk(id);
+    if (!appointment) {
+        throw new NotFoundError('Consulta não encontrada');
     }
-    if (parsedDate <= new Date()) { // Comparar com a data/hora atual
-      throw new ValidationError('Data deve ser futura');
+
+    let updatedDateUtc = appointment.date; // Mantém a data original se não for fornecida
+    if (data.date) {
+        updatedDateUtc = validateAndParseDate(data.date); // Reutiliza a validação
     }
-    updateData.date = format(parsedDate, "yyyy-MM-dd'T'HH:mm:ss'Z'");
-  }
 
-  const { error } = appointmentSchema.validate({
-    ...updateData,
-    doctorId: updateData.doctorId || appointment.doctorId,
-    patientId: updateData.patientId || appointment.patientId,
-  });
-  if (error) {
-    throw new ValidationError(error.details[0].message);
-  }
+    // Validações de ID de médico e paciente se forem passados nos dados
+    if (data.doctorId) {
+        const doctor = await User.findByPk(data.doctorId);
+        if (!doctor || doctor.role !== 'doctor') {
+            throw new NotFoundError('Médico não encontrado');
+        }
+    }
+    if (data.patientId) {
+        const patient = await Patient.findByPk(data.patientId);
+        if (!patient) {
+            throw new NotFoundError('Paciente não encontrado');
+        }
+    }
 
-  await appointment.update(updateData);
-  return {
-    ...appointment.toJSON(),
-    date: format(new Date(appointment.date), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-  };
+    // Checar conflitos de agendamento APENAS se a data ou o médico foram alterados
+    if (data.date || data.doctorId) {
+        const doctorIdToCheck = data.doctorId || appointment.doctorId; // Usa o novo ou o existente
+        const dateToCheck = updatedDateUtc;
+
+        const startOfAppointmentHour = startOfHour(dateToCheck);
+        const endOfAppointmentHour = addHours(startOfAppointmentHour, 1);
+
+        const existingConflict = await Appointment.findOne({
+            where: {
+                doctorId: doctorIdToCheck,
+                date: {
+                    [Op.between]: [startOfAppointmentHour, endOfAppointmentHour],
+                },
+                id: {
+                    [Op.ne]: id, // Exclui o próprio agendamento que está sendo atualizado
+                },
+            },
+        });
+
+        if (existingConflict) {
+            throw new ValidationError('Médico já está agendado neste horário');
+        }
+    }
+
+    await appointment.update({
+        ...data,
+        date: updatedDateUtc, // Passa a data em UTC para o update
+    });
+
+    // Recarregar para incluir associações atualizadas se necessário ou apenas retornar os dados atualizados
+    // Aqui vamos retornar os dados formatados do objeto atualizado
+    const updatedAppointment = await Appointment.findByPk(id, {
+        include: [
+            { model: User, as: 'doctor', attributes: ['id', 'name'] },
+            { model: Patient, as: 'patient', attributes: ['id', 'name'] },
+        ],
+    });
+
+    return {
+        ...updatedAppointment.toJSON(),
+        date: formatUtcDateToLocalString(updatedAppointment.date), // Formata para a string local
+    };
 };
 
 const deleteAppointment = async (id) => {
-  const appointment = await Appointment.findByPk(id);
-  if (!appointment) {
-    throw new NotFoundError('Consulta não encontrada');
-  }
-  await appointment.destroy();
+    const appointment = await Appointment.findByPk(id);
+    if (!appointment) {
+        throw new NotFoundError('Consulta não encontrada');
+    }
+    await appointment.destroy();
 };
 
-module.exports = { createAppointment, getAppointments, getAppointmentById, updateAppointment, deleteAppointment };
+module.exports = {
+    createAppointment,
+    getAppointments,
+    getAppointmentById,
+    updateAppointment,
+    deleteAppointment,
+};

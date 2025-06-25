@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
-const { authMiddleware } = require('../middleware/authMiddleware'); // Desestruturar
-const { param } = require('express-validator');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { param, validationResult } = require('express-validator');
 
 const validate = (req, res, next) => {
-    const errors = req.getValidationResult(); // Corrigir para validationResult
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }

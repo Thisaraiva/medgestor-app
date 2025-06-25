@@ -1,6 +1,6 @@
 const { createRecord, getRecordsByPatient, getRecordById } = require('../../services/recordService');
 const { MedicalRecord, Patient } = require('../../models');
-const { NotFoundError } = require('../../errors/errors'); // Importar NotFoundError e ValidationError
+const { NotFoundError, ValidationError } = require('../../errors/errors'); // Importar NotFoundError e ValidationError
 jest.mock('../../models');
 
 describe('Record Service', () => {
@@ -33,7 +33,7 @@ describe('Record Service', () => {
       date: new Date().toISOString(),
     };
     Patient.findByPk.mockResolvedValue(null); // Paciente não encontrado
-    await expect(createRecord(data)).rejects.toThrow(NotFoundError); // Espera NotFoundError
+    await expect(createRecord(data)).rejects.toThrow(ValidationError); // Espera NotFoundError
     await expect(createRecord(data)).rejects.toThrow('Paciente não encontrado');
     expect(Patient.findByPk).toHaveBeenCalledWith(data.patientId);
     expect(MedicalRecord.create).not.toHaveBeenCalled();

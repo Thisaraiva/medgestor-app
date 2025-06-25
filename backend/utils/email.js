@@ -1,28 +1,26 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.yahoo.com',
-  port: 587,
-  secure: false, // Use STARTTLS
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
 
-const sendAppointmentConfirmation = async (to, { date, doctorName }) => {
+const sendAppointmentConfirmation = async ({ to, patientName, doctorName, date }) => {
   const mailOptions = {
     from: `"MedGestor" <${process.env.EMAIL_USER}>`,
     to,
     subject: 'Confirmação de Consulta - MedGestor',
-    text: `Sua consulta foi agendada para ${new Date(date).toLocaleString()} com o Dr. ${doctorName}. Por favor, confirme sua presença.`,
+    text: `Olá ${patientName},\n\nSua consulta com o Dr. ${doctorName} foi agendada para ${date}.\n\nAtenciosamente,\nEquipe MedGestor`,
     html: `
       <h2>Confirmação de Consulta</h2>
-      <p>Olá,</p>
-      <p>Sua consulta foi agendada para <strong>${new Date(date).toLocaleString()}</strong> com o Dr. <strong>${doctorName}</strong>.</p>
-      <p>Por favor, confirme sua presença.</p>
-      <p>Atenciosamente,<br/>Equipe MedGestor</p>
+      <p>Olá <strong>${patientName}</strong>,</p>
+      <p>Sua consulta com o Dr. <em>${doctorName}</em> foi agendada para <strong>${date}</strong>.</p>
+      <p>Atenciosamente,<br />Equipe MedGestor</p>
     `,
   };
 

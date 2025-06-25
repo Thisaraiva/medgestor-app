@@ -1,26 +1,52 @@
-const bcrypt = require('bcryptjs');
+const bcryptjs = require('bcryptjs');
 const { User } = require('../models');
 const { generateToken } = require('../utils/jwt');
-const { ValidationError } = require('../errors/errors');
+const { ValidationError, NotFoundError } = require('../errors/errors');
 
 const register = async ({ name, email, password, role, crm }) => {
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
     throw new ValidationError('Email já registrado');
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password: hashedPassword, role, crm });
-  const token = generateToken(user);
-  return { user: { id: user.id, name, email, role }, token };
+
+  const user = await User.create({
+    name,
+    email,
+    password, // Será hasheado pelo hook beforeSave no modelo User
+    role,
+    crm: role === 'doctor' ? crm : null,
+  });
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    crm: user.crm,
+  };
 };
 
 const login = async ({ email, password }) => {
   const user = await User.findOne({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new ValidationError('Credenciais inválidas');
+  if (!user) {
+    throw new NotFoundError('Email ou senha inválidos');
   }
-  const token = generateToken(user);
-  return { user: { id: user.id, name: user.name, email, role: user.role }, token };
+
+  const isMatch = await bcryptjs.compare(password, user.password);
+  if (!isMatch) {
+    throw new NotFoundError('Email ou senha inválidos');
+  }
+
+  const token = generateToken({ id: user.id, role: user.role });
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    crm: user.crm,
+    token,
+  };
 };
 
 module.exports = { register, login };

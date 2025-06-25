@@ -24,7 +24,7 @@ module.exports = {
           model: 'users',
           key: 'id',
         },
-        onDelete: 'NO ACTION',
+        onDelete: 'CASCADE',
       },
       medication: {
         type: Sequelize.STRING,

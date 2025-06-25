@@ -17,7 +17,7 @@ router.get('/', authMiddleware, patientController.getPatients);
 router.get(
   '/:id',
   authMiddleware,
-  [param('id').isUUID().withMessage('ID must be a valid UUID')],
+  [param('id').isUUID().withMessage('Paciente não encontrado')],
   validate,
   patientController.getPatientById
 );
@@ -25,7 +25,7 @@ router.put(
   '/:id',
   authMiddleware,
   restrictTo('doctor','secretary', 'admin'),
-  [param('id').isUUID().withMessage('ID must be a valid UUID')],
+  [param('id').isUUID().withMessage('Paciente não encontrado')],
   validate,
   patientController.updatePatient
 );
@@ -33,7 +33,7 @@ router.delete(
   '/:id',
   authMiddleware,
   restrictTo('doctor','admin'),
-  [param('id').isUUID().withMessage('ID must be a valid UUID')],
+  [param('id').isUUID().withMessage('Paciente não encontrado')],
   validate,
   patientController.deletePatient
 );

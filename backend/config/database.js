@@ -12,14 +12,15 @@ const config = {
     port: parseInt(process.env.DB_PORT, 10) || 5432,
     dialect: 'postgres',
   },
-  test: {
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME_TEST || 'medgestor_test',
-    host: process.env.DB_HOST_TEST || 'db_test', // Corrigido para 'db_test'
-    port: parseInt(process.env.DB_PORT_TEST, 10) || 5432, // Corrigido para 5432 como fallback
-    dialect: 'postgres',
-  },
+  // backend\config\database.js
+test: {
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME_TEST || 'medgestor_test',
+  host: process.env.DB_HOST_TEST || 'db_test', // Nome do serviço no docker-compose (mapeia para porta 5432 internamente)
+  port: parseInt(process.env.DB_PORT_TEST, 10) || 5432, // Porta interna do contêiner, mapeada para 5433 no host
+  dialect: 'postgres',
+},
   production: {
     username: process.env.DB_USER_PROD || 'postgres',
     password: process.env.DB_PASSWORD_PROD || 'postgres',

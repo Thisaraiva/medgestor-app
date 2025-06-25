@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const bcrypt = require('bcryptjs');
+const bcryptjs = require('bcryptjs');
 
 const User = sequelize.define('User', {
   id: {
@@ -33,8 +33,13 @@ const User = sequelize.define('User', {
     allowNull: true,
     validate: {
       isCrmValid(value) {
-        if (this.role === 'doctor' && !value) {
-          throw new Error('CRM is required for doctors');
+        if (this.role === 'doctor') {
+          if (!value) {
+            throw new Error('CRM is required for doctors');
+          }
+          if (!/^CRM\/[A-Z]{2}-\d{1,6}$/.test(value)) {
+            throw new Error('CRM must be in the format CRM/UF-XXXXXX');
+          }
         }
         if (this.role !== 'doctor' && value) {
           throw new Error('CRM must be null for non-doctors');
@@ -48,15 +53,12 @@ const User = sequelize.define('User', {
   hooks: {
     beforeSave: async (user) => {
       if (user.changed('password')) {
-        user.password = await bcrypt.hash(user.password, 10);
+        user.password = await bcryptjs.hash(user.password, 10);
       }
     },
   },
 });
 
-
-
-// Adicionar a função associate
 User.associate = (models) => {
   User.hasMany(models.Appointment, { foreignKey: 'doctorId', as: 'doctorAppointments' });
   User.hasMany(models.Prescription, { foreignKey: 'doctorId', as: 'doctorPrescriptions' });
