@@ -1,0 +1,12 @@
+/* frontend/src/styles/tailwind.css */
+
+/*
+  Estas são as diretivas essenciais do Tailwind CSS.
+  Elas importam os estilos base, componentes e utilitários do Tailwind.
+  Certifique-se de que este arquivo seja importado no seu ponto de entrada (index.js)
+  para que o Tailwind possa funcionar corretamente.
+*/
+
+@tailwind base;       /* Inclui os estilos base do Tailwind (reset CSS, etc.) */
+@tailwind components; /* Inclui as classes de componentes pré-construídos do Tailwind */
+@tailwind utilities;  /* Inclui as classes de utilitários do Tailwind (flex, p-4, text-lg, etc.) */

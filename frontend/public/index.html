@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <!--
+        A meta tag viewport é crucial para garantir que sua aplicação seja responsiva
+        e se adapte a diferentes tamanhos de tela (celulares, tablets, desktops).
+        'width=device-width' define a largura da viewport para a largura do dispositivo.
+        'initial-scale=1.0' define o nível de zoom inicial quando a página é carregada.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+        O título da sua aplicação que aparecerá na aba do navegador.
+        É importante para SEO e para a identificação da página pelo usuário.
+    -->
+    <title>MedGestor - Gestão de Consultório Médico</title>
+    <!--
+        Link para o favicon.ico, o ícone que aparece na aba do navegador.
+        Se você tiver um arquivo favicon.ico na pasta 'public', ele será usado.
+        Caso contrário, o navegador pode tentar buscar um padrão ou não exibir nenhum.
+    -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+<body class="bg-background-light text-text-DEFAULT font-sans antialiased">
+    <!--
+        Este é o elemento DIV principal onde sua aplicação React será montada.
+        O 'ReactDOM.createRoot(document.getElementById('root'))' no src/index.js
+        procura por este elemento para iniciar a renderização da sua aplicação.
+        É CRUCIAL que este ID seja 'root'.
+    -->
+    <div id="root">
+        <!--
+            Esta mensagem é exibida apenas se o JavaScript estiver desabilitado no navegador.
+            Como o React é uma aplicação JavaScript, ela não funcionaria sem JS.
+        -->
+        <noscript>Você precisa habilitar o JavaScript para rodar esta aplicação.</noscript>
+    </div>
+    <!--
+        O Webpack irá injetar automaticamente o seu arquivo 'bundle.js' (que contém
+        todo o código React, JavaScript e CSS processado) aqui, geralmente no final do <body>.
+        Não é necessário adicionar um <script src="bundle.js"></script> manualmente,
+        pois o HtmlWebpackPlugin já cuida disso.
+    -->
+</body>
+</html>

@@ -1,19 +1,20 @@
-// frontend/src/pages/Login.js
+// frontend/src/pages/Register.js
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom'; // Importa Link para navegação
-import { useAuth } from '../context/AuthContext'; // Importa o hook useAuth do contexto
+import authService from '../services/authService'; // Importa o serviço de autenticação
 
-const Login = () => {
+const Register = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('secretaria'); // Valor padrão para o papel do usuário
   const [message, setMessage] = useState(''); // Para mensagens de sucesso/erro
   const [isError, setIsError] = useState(false); // Para controlar o estilo da mensagem
   const navigate = useNavigate();
-  const { login } = useAuth(); // Obtém a função de login do contexto de autenticação
 
   /**
-   * Lida com o envio do formulário de login.
+   * Lida com o envio do formulário de registro.
    * @param {Event} e - Evento de envio do formulário.
    */
   const handleSubmit = async (e) => {
@@ -22,23 +23,27 @@ const Login = () => {
     setIsError(false); // Reseta o estado de erro
 
     try {
-      // Chama a função de login do contexto de autenticação
-      await login(email, password);
-      // Se o login for bem-sucedido, redireciona para o dashboard
-      navigate('/dashboard');
+      // Chama o serviço de registro com os dados do formulário
+      await authService.register(name, email, password, role);
+      setMessage('Registro realizado com sucesso! Redirecionando para o login...');
+      setIsError(false);
+      // Redireciona para a página de login após um pequeno atraso
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
     } catch (err) {
-      // Exibe uma mensagem de erro em caso de falha no login
-      const errorMessage = err.response?.data?.message || 'Credenciais inválidas. Tente novamente.';
+      // Exibe uma mensagem de erro em caso de falha no registro
+      const errorMessage = err.response?.data?.message || 'Erro ao registrar. Tente novamente.';
       setMessage(errorMessage);
       setIsError(true);
-      console.error('Erro de login:', err);
+      console.error('Erro de registro:', err);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background-light font-sans">
       <div className="bg-background-DEFAULT p-8 rounded-xl shadow-custom-medium w-full max-w-md">
-        <h2 className="text-3xl font-bold text-center text-primary-dark mb-6">Login</h2>
+        <h2 className="text-3xl font-bold text-center text-primary-dark mb-6">Registrar</h2>
 
         {/* Exibição de mensagens de sucesso ou erro */}
         {message && (
@@ -48,6 +53,23 @@ const Login = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          {/* Campo Nome */}
+          <div className="mb-4">
+            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="name">
+              Nome
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
+              placeholder="Seu nome completo"
+              required
+              autocomplete="name"
+            />
+          </div>
+
           {/* Campo Email */}
           <div className="mb-4">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="email">
@@ -61,6 +83,7 @@ const Login = () => {
               className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
               placeholder="seuemail@exemplo.com"
               required
+              autocomplete="email"
             />
           </div>
 
@@ -77,23 +100,43 @@ const Login = () => {
               className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
               placeholder="********"
               required
+              autocomplete="new-password"
             />
           </div>
 
-          {/* Botão de Login */}
+          {/* Campo Papel/Perfil */}
+          <div className="mb-6">
+            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="role">
+              Perfil
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
+              required
+            >
+              <option value="secretaria">Secretária</option>
+              <option value="medico">Médico</option>
+              {/* <option value="paciente">Paciente</option> - Você pode habilitar isso se o registro de paciente for direto */}
+              {/* <option value="admin">Administrador</option> - Geralmente admins são criados manualmente ou por script */}
+            </select>
+          </div>
+
+          {/* Botão de Registro */}
           <button
             type="submit"
             className="w-full bg-primary-DEFAULT text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
           >
-            Entrar
+            Registrar
           </button>
         </form>
 
-        {/* Link para a página de Registro */}
+        {/* Link para a página de Login */}
         <p className="text-center text-text-light text-sm mt-6">
-          Não tem uma conta?{' '}
-          <Link to="/register" className="text-primary-DEFAULT hover:underline font-semibold">
-            Registre-se
+          Já tem uma conta?{' '}
+          <Link to="/" className="text-primary-DEFAULT hover:underline font-semibold">
+            Faça Login
           </Link>
         </p>
       </div>
@@ -101,4 +144,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
