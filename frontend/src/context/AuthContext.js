@@ -1,87 +1,100 @@
 // frontend/src/context/AuthContext.js
 
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import authService from '../services/authService'; // Importa o serviço de autenticação
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService from '../services/authService';
+import { jwtDecode } from 'jwt-decode';
 
-// Cria o contexto de autenticação.
-// Ele fornecerá o estado de autenticação e as funções para login/logout
-// para qualquer componente que o consumir.
 const AuthContext = createContext(null);
 
-// Componente provedor do contexto de autenticação.
-// Ele gerencia o estado de autenticação e o disponibiliza para seus filhos.
 export const AuthProvider = ({ children }) => {
-  // Estado para armazenar o token de autenticação
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  // Estado para armazenar as informações do usuário (opcional, mas útil)
-  const [user, setUser] = useState(null);
-  // Estado para indicar se o carregamento inicial da autenticação foi concluído
-  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null); // Armazena os dados do usuário (incluindo o papel)
+  const [loading, setLoading] = useState(true); // Estado de carregamento inicial
 
-  // Efeito para verificar o token no localStorage quando o componente é montado.
-  // Isso permite que o usuário permaneça logado se ele fechar e reabrir o navegador.
+  // Efeito para verificar o token no localStorage ao carregar a aplicação
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      // Aqui você poderia adicionar uma lógica para decodificar o token
-      // ou fazer uma chamada ao backend para obter os dados do usuário.
-      // Por enquanto, vamos apenas definir o token.
-      // Exemplo: const decodedUser = jwt_decode(storedToken); setUser(decodedUser);
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedUser = jwtDecode(token); // Decodifica o token para obter os dados do usuário
+        // Verifica se o token não expirou
+        if (decodedUser.exp * 1000 > Date.now()) {
+          setIsAuthenticated(true);
+          setUser(decodedUser); // Define os dados do usuário
+        } else {
+          // Token expirado, limpa o localStorage
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Erro ao decodificar token JWT:', error);
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        setUser(null);
+      }
     }
-    setLoading(false); // Marca o carregamento inicial como concluído
+    setLoading(false); // Finaliza o carregamento inicial
   }, []);
 
-  // Função para realizar o login do usuário.
+  /**
+   * Função para realizar o login do usuário.
+   * @param {string} email - Email do usuário.
+   * @param {string} password - Senha do usuário.
+   */
   const login = async (email, password) => {
     try {
+      // authService.login agora retorna a resposta completa do Axios
       const response = await authService.login(email, password);
-      const newToken = response.token;
-      localStorage.setItem('token', newToken); // Armazena o token no localStorage
-      setToken(newToken); // Atualiza o estado do token
-      // Opcional: decodificar o token para obter informações do usuário
-      // setUser(jwt_decode(newToken));
-      return response; // Retorna a resposta do serviço de autenticação
+      // Acessa .data para obter o objeto JSON retornado pelo backend
+      const { token, user: userData } = response.data; // <-- CORREÇÃO AQUI: acessa response.data
+      localStorage.setItem('token', token); // Armazena o token no localStorage
+
+      // O token já contém os dados do usuário que precisamos (id, role, name, email)
+      // O backend já está retornando `user` no `response.data` do login,
+      // então podemos usar `userData` diretamente ou decodificar o token novamente.
+      // Para consistência, vamos decodificar o token para garantir que o `user`
+      // no estado seja sempre do mesmo formato que vem do `jwtDecode`.
+      const decodedUser = jwtDecode(token);
+      setIsAuthenticated(true);
+      setUser(decodedUser); // Define os dados do usuário após o login
+      return response; // Retorna a resposta completa se necessário para o chamador
     } catch (error) {
       console.error('Erro no login:', error);
-      throw error; // Propaga o erro para o componente que chamou o login
+      setIsAuthenticated(false);
+      setUser(null);
+      throw error; // Re-lança o erro para ser tratado pelo componente de login
     }
   };
 
-  // Função para realizar o logout do usuário.
+  /**
+   * Função para realizar o logout do usuário.
+   */
   const logout = () => {
     localStorage.removeItem('token'); // Remove o token do localStorage
-    setToken(null); // Limpa o estado do token
-    setUser(null); // Limpa o estado do usuário
-    // Redirecionar para a página de login pode ser feito no componente que chama o logout
+    setIsAuthenticated(false);
+    setUser(null); // Limpa os dados do usuário
   };
 
-  // O valor que será fornecido para os componentes que consomem este contexto.
-  // Inclui o token, o estado de carregamento, as funções de login e logout, e as informações do usuário.
-  const authContextValue = {
-    token,
-    user,
-    loading,
-    login,
-    logout,
-    isAuthenticated: !!token, // Propriedade conveniente para verificar se o usuário está autenticado
-  };
+  // Se ainda estiver carregando, pode renderizar um spinner ou nada
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background-light font-sans flex items-center justify-center">
+        <p className="text-text-DEFAULT text-lg">Carregando autenticação...</p>
+      </div>
+    );
+  }
 
-  // Retorna o provedor do contexto, envolvendo os filhos.
-  // Isso garante que todos os componentes dentro do <AuthProvider> tenham acesso ao contexto.
   return (
-    <AuthContext.Provider value={authContextValue}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook personalizado para consumir o contexto de autenticação.
-// Facilita o uso do contexto em componentes funcionais.
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    // Garante que o hook seja usado apenas dentro de um AuthProvider
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

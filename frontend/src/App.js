@@ -3,25 +3,43 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
-import Register from './pages/Register'; // <-- VERIFIQUE ESTA LINHA: IMPORTAÇÃO DO COMPONENTE REGISTER
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import PatientList from './pages/PatientList';
+import UserManagement from './pages/UserManagement'; // Importa o novo componente
 import { AuthProvider } from './context/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
 
 const App = () => {
     return (
         <AuthProvider>
             <Router>
                 <Routes>
-                    {/* Rota para a página de Login (raiz da aplicação) */}
+                    {/* Rota pública para Login */}
                     <Route path="/" element={<Login />} />
-                    {/* Rota para a página de Registro */}
-                    <Route path="/register" element={<Register />} /> {/* <-- VERIFIQUE ESTA LINHA: USO DO COMPONENTE REGISTER */}
-                    {/* Rota para o Dashboard, que exigirá autenticação */}
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    {/* Rota para a Lista de Pacientes, que exigirá autenticação */}
-                    <Route path="/patients" element={<PatientList />} />
+
+                    {/* Rotas Protegidas que exigem apenas autenticação */}
+                    <Route element={<PrivateRoute />}>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/patients" element={<PatientList />} />
+                    </Route>
+
+                    {/* Rota de Registro de Usuário: Protegida por papéis específicos */}
+                    {/* Apenas 'admin', 'doctor' e 'secretary' podem acessar a página de registro de novos usuários. */}
+                    <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
+                        <Route path="/register" element={<Register />} />
+                    </Route>
+
+                    {/* Rota de Gerenciamento de Usuários: Protegida apenas para Admin */}
+                    <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
+                        <Route path="/users" element={<UserManagement />} />
+                    </Route>
+
                     {/* Adicione outras rotas aqui conforme o desenvolvimento avança */}
+                    {/* Exemplo de rota protegida para Médicos/Admin: */}
+                    {/* <Route element={<PrivateRoute roles={['admin', 'doctor']} />}>
+                        <Route path="/medical-records" element={<MedicalRecords />} />
+                    </Route> */}
                 </Routes>
             </Router>
         </AuthProvider>

@@ -1,3 +1,5 @@
+// backend/middleware/authMiddleware.js
+
 const { verifyToken } = require('../utils/jwt');
 
 const authMiddleware = (req, res, next) => {
@@ -7,7 +9,7 @@ const authMiddleware = (req, res, next) => {
   }
   try {
     const decoded = verifyToken(token);
-    req.user = decoded;
+    req.user = decoded; // Adiciona os dados do usuário decodificados à requisição
     next();
   } catch (error) {
     res.status(401).json({ error: 'Token inválido' });
@@ -15,7 +17,8 @@ const authMiddleware = (req, res, next) => {
 };
 
 const restrictTo = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
+  // Verifica se req.user existe e se o papel do usuário está incluído nos papéis permitidos
+  if (!req.user || !roles.includes(req.user.role)) {
     return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
   }
   next();

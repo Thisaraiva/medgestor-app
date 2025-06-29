@@ -6,6 +6,7 @@ const patientRoutes = require('./routes/patientRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const recordRoutes = require('./routes/recordRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
+const userRoutes = require('./routes/userRoutes');
 const errorMiddleware = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -20,6 +21,7 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/users', userRoutes);
 
 // Error Handling
 app.use(errorMiddleware);

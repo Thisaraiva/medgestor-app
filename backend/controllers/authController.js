@@ -16,6 +16,7 @@ const registerSchema = Joi.object({
     'string.min': 'Senha deve ter pelo menos 6 caracteres',
     'any.required': 'Senha é obrigatória',
   }),
+  // A validação Joi deve esperar os valores em minúsculas, conforme o ENUM do modelo User
   role: Joi.string().valid('admin', 'doctor', 'secretary').required().messages({
     'any.only': 'Role deve ser admin, doctor ou secretary',
     'any.required': 'Role é obrigatório',
@@ -40,9 +41,10 @@ const register = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
-  if (req.user.role !== 'admin') {
-    throw new ValidationError('Acesso negado: permissão insuficiente', 403);
-  }
+  // A permissão para registrar já é verificada pelo authMiddleware e restrictTo na rota
+  // if (req.user.role !== 'admin') {
+  //   throw new ValidationError('Acesso negado: permissão insuficiente', 403);
+  // }
   const userData = await authService.register(req.body);
   res.status(201).json(userData);
 });
@@ -52,8 +54,8 @@ const login = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
-  const userData = await authService.login(req.body);
-  res.status(200).json(userData);
+  const userData = await authService.login(req.body); // authService.login agora retorna { token, user }
+  res.status(200).json(userData); // Retorna o objeto completo { token, user }
 });
 
 module.exports = { register, login };
