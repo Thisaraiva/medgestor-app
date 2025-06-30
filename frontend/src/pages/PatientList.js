@@ -16,6 +16,8 @@ const PatientList = () => {
   const [editingPatient, setEditingPatient] = useState(null); // Para armazenar o paciente sendo editado
   const [showConfirmDialog, setShowConfirmDialog] = useState(false); // Estado para o diálogo de confirmação
   const [patientToDelete, setPatientToDelete] = useState(null); // ID do paciente a ser excluído
+  const [actionMessage, setActionMessage] = useState(''); // Para mensagens de sucesso/erro (adição, edição, exclusão)
+  const [isActionError, setIsActionError] = useState(false); // Para indicar se a mensagem é de erro
   const { user } = useAuth(); // Obtém o usuário logado
 
   // Função para buscar pacientes do backend
@@ -59,21 +61,28 @@ const PatientList = () => {
     if (patientToDelete) {
       try {
         await patientService.deletePatient(patientToDelete); // Chama o serviço de exclusão
-        alert('Paciente excluído com sucesso!'); // Usar um modal de sucesso posteriormente
+        setActionMessage('Paciente excluído com sucesso!'); // Mensagem de sucesso
+        setIsActionError(false);
         fetchPatients(); // Recarrega a lista após exclusão
       } catch (err) {
         console.error('Erro ao excluir paciente:', err);
-        alert(err.response?.data?.message || 'Erro ao excluir paciente. Tente novamente.'); // Usar um modal de erro
+        const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erro ao excluir paciente. Tente novamente.';
+        setActionMessage(errorMessage); // Mensagem de erro
+        setIsActionError(true);
       } finally {
         setPatientToDelete(null);
+        setTimeout(() => setActionMessage(''), 3000); // Limpa a mensagem após 3 segundos
       }
     }
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = (message, isError) => { // Recebe message e isError do PatientForm
     setShowPatientForm(false); // Esconde o formulário após submissão
-    setEditingPatient(null);   // Limpa o paciente em edição
-    fetchPatients();           // Recarrega a lista de pacientes
+    setEditingPatient(null);    // Limpa o paciente em edição
+    setActionMessage(message);  // Define a mensagem de sucesso/erro do formulário
+    setIsActionError(isError);  // Define se a mensagem é de erro
+    fetchPatients();            // Recarrega a lista de pacientes
+    setTimeout(() => setActionMessage(''), 3000); // Limpa a mensagem após 3 segundos
   };
 
   // Verifica se o usuário tem permissão para gerenciar pacientes (Secretária, Médico, Admin)
@@ -112,6 +121,13 @@ const PatientList = () => {
             </button>
           )}
         </div>
+
+        {/* Mensagem de Ação (Sucesso/Erro) */}
+        {actionMessage && (
+          <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isActionError ? 'bg-error text-white' : 'bg-success text-white'}`}>
+            {actionMessage}
+          </div>
+        )}
 
         {/* Modal para Adicionar/Editar Paciente */}
         <Modal show={showPatientForm} onClose={() => setShowPatientForm(false)}>
