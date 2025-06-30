@@ -12,7 +12,7 @@ const Dashboard = () => {
       <Navbar /> {/* Inclui a barra de navegação */}
       <div className="container mx-auto p-6">
         <h1 className="text-4xl font-bold text-primary-dark mb-8 text-center">
-          Bem-vindo ao MedGestor, {user ? user.name : 'Usuário'}!
+          Bem-vindo ao MedGestor, {user ? user.name : 'Usuário'}! {/* Exibe o nome do usuário */}
         </h1>
 
         {/* Conteúdo Dinâmico Baseado no Perfil do Usuário */}

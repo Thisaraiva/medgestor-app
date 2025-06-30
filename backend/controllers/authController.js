@@ -21,9 +21,16 @@ const registerSchema = Joi.object({
     'any.only': 'Role deve ser admin, doctor ou secretary',
     'any.required': 'Role é obrigatório',
   }),
-  crm: Joi.string().pattern(/^CRM\/[A-Z]{2}-\d{1,6}$/).allow(null).messages({
-    'string.pattern.base': 'CRM deve estar no formato CRM/UF-XXXXXX',
-  }),
+  crm: Joi.string()
+    .pattern(/^CRM\/[A-Z]{2}-\d{1,6}$/)
+    .when('role', {
+      is: 'doctor',
+      then: Joi.required(),
+      otherwise: Joi.forbidden(),
+    })
+    .messages({
+      'string.pattern.base': 'CRM deve estar no formato CRM/UF-XXXXXX (ex: CRM/SP-123456)',
+    }),
 });
 
 const loginSchema = Joi.object({

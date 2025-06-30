@@ -5,13 +5,13 @@ const Joi = require('joi');
 
 const patientSchema = Joi.object({
   name: Joi.string().min(3).required(),
-  // O Joi agora espera o CPF formatado com pontos e traço
+  
   cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).required().messages({
     'string.pattern.base': 'CPF deve estar no formato 000.000.000-00',
     'any.required': 'CPF é obrigatório',
   }),
-  email: Joi.string().email().required(),
-  phone: Joi.string().required(),
+  email: Joi.string().email().allow(null, ''),
+  phone: Joi.string().allow(null, ''),
   allergies: Joi.string().allow(null, ''),
 });
 
@@ -53,19 +53,36 @@ const updatePatient = async (id, data) => {
   if (!patient) {
     throw new NotFoundError('Paciente não encontrado');
   }
+  
+  const updatePatientServiceSchema = Joi.object({
+    name: Joi.string().min(3),
+    cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).messages({
+      'string.pattern.base': 'CPF deve estar no formato 000.000.000-00',
+    }),
+    email: Joi.string().email().allow(null, ''),
+    phone: Joi.string().allow(null, ''),
+    allergies: Joi.string().allow(null, ''),
+  }).min(1); // Garante que pelo menos um campo seja enviado
 
-  // Valida os dados de atualização. Permite que CPF e nome não sejam alterados se não fornecidos.
-  const { error } = patientSchema.validate(data, { abortEarly: false, allowUnknown: true });
+  const { error } = updatePatientServiceSchema.validate(data, { abortEarly: false, allowUnknown: false });
   if (error) {
     throw new ValidationError(error.details.map(x => x.message).join(', '));
   }
-
+  
   if (data.cpf && data.cpf !== patient.cpf) {
-    const existingPatient = await Patient.findOne({ where: { cpf: data.cpf } });
-    if (existingPatient) {
-      throw new ValidationError('CPF já registrado');
+    const existingPatientWithCpf = await Patient.findOne({ where: { cpf: data.cpf } });
+    if (existingPatientWithCpf) {
+      throw new ValidationError('CPF já registrado para outro paciente');
     }
   }
+  
+  if (data.email && data.email !== patient.email) {
+    const existingPatientWithEmail = await Patient.findOne({ where: { email: data.email } });
+    if (existingPatientWithEmail) {
+      throw new ValidationError('Email já registrado para outro paciente');
+    }
+  }
+
 
   return patient.update(data);
 };

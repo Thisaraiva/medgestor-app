@@ -75,7 +75,7 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-primary-DEFAULT text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
+            className="w-full bg-primary-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-DEFAULT focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
           >
             Entrar
           </button>

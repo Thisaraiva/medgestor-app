@@ -44,17 +44,14 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (email, password) => {
     try {
-      // authService.login agora retorna a resposta completa do Axios
       const response = await authService.login(email, password);
       // Acessa .data para obter o objeto JSON retornado pelo backend
-      const { token, user: userData } = response.data; // <-- CORREÇÃO AQUI: acessa response.data
+      // A estrutura atual do backend é { id, name, email, role, crm, token }
+      const { token, ...userData } = response.data; // <-- CORREÇÃO AQUI: desestrutura token e o restante em userData
       localStorage.setItem('token', token); // Armazena o token no localStorage
 
-      // O token já contém os dados do usuário que precisamos (id, role, name, email)
-      // O backend já está retornando `user` no `response.data` do login,
-      // então podemos usar `userData` diretamente ou decodificar o token novamente.
-      // Para consistência, vamos decodificar o token para garantir que o `user`
-      // no estado seja sempre do mesmo formato que vem do `jwtDecode`.
+      // Para consistência, decodificamos o token para popular o estado `user`
+      // isso garante que `user` sempre tenha as propriedades do payload do JWT.
       const decodedUser = jwtDecode(token);
       setIsAuthenticated(true);
       setUser(decodedUser); // Define os dados do usuário após o login

@@ -42,12 +42,21 @@ module.exports = {
         error: '#dc3545',   // Vermelho
         warning: '#ffc107', // Amarelo
       },
-      // Configurações de sombra para dar profundidade aos elementos.
+      // Adicione animações personalizadas para o modal
+      keyframes: {
+        'scale-in': {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+      animation: {
+        'scale-in': 'scale-in 0.3s ease-out forwards',
+      },
+      // Sombras personalizadas
       boxShadow: {
-        // Sombra leve para elementos como cards ou modais.
         'custom-light': '0 4px 6px rgba(0, 0, 0, 0.1)',
-        // Sombra um pouco mais pronunciada para elementos em destaque.
         'custom-medium': '0 10px 15px rgba(0, 0, 0, 0.1)',
+        'custom-strong': '0 20px 25px rgba(0, 0, 0, 0.1)',
       },
       // Configurações de borda para elementos.
       borderRadius: {

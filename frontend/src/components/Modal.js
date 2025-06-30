@@ -18,11 +18,11 @@ const Modal = ({ show, onClose, children }) => {
 
   return ReactDOM.createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background-DEFAULT rounded-xl shadow-2xl w-full max-w-lg relative transform transition-all duration-300 scale-95 opacity-0 animate-scale-in">
+      <div className="bg-background-light rounded-xl shadow-2xl w-full max-w-lg relative transform transition-all duration-300 scale-95 opacity-0 animate-scale-in">
         {/* Botão de fechar */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-text-light hover:text-primary-dark text-2xl font-bold"
+          className="absolute top-4 right-4 text-text-dark hover:text-primary-DEFAULT text-2xl font-bold"
           aria-label="Fechar"
         >
           &times;

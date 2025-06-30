@@ -13,6 +13,7 @@ import patientService from '../services/patientService'; // Importa o serviço d
 const PatientForm = ({ patient, onSubmit }) => {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState(''); // Adicionado estado para email
   const [phone, setPhone] = useState('');
   const [allergies, setAllergies] = useState('');
   const [message, setMessage] = useState('');
@@ -24,12 +25,14 @@ const PatientForm = ({ patient, onSubmit }) => {
     if (patient) {
       setName(patient.name || '');
       setCpf(patient.cpf || '');
+      setEmail(patient.email || ''); // Preenche o email
       setPhone(patient.phone || '');
       setAllergies(patient.allergies || '');
     } else {
       // Limpa o formulário se não houver paciente para edição
       setName('');
       setCpf('');
+      setEmail(''); // Limpa o email
       setPhone('');
       setAllergies('');
     }
@@ -64,12 +67,13 @@ const PatientForm = ({ patient, onSubmit }) => {
     setIsError(false);
     setLoading(true);
 
-    // Remove a formatação do CPF antes de enviar para o backend,
-    // pois o backend espera apenas dígitos, a validação Joi pode ser ajustada.
-    // Ou, se o Joi espera o formato com pontos e traço, garantimos que o formato seja enviado.
-    // Pelo erro, o Joi espera o formato com pontos e traço.
-    const unformattedCpf = cpf.replace(/\D/g, ''); // Remove pontos e traços para enviar ao backend se o backend espera só números
-    const patientData = { name, cpf, phone, allergies }; // Envia o CPF formatado se o Joi espera assim
+    // Ajuste aqui: inclua o email nos dados do paciente.
+    // Se o campo de email no frontend não for preenchido, ele enviará uma string vazia.
+    // O backend, como Patient.js tem allowNull: true para email, deve aceitar string vazia ou null.
+    // Se o backend espera 'null' para campo vazio, você pode ajustar:
+    // const patientData = { name, cpf, email: email || null, phone, allergies };
+    const patientData = { name, cpf, email, phone, allergies };
+
 
     try {
       if (patient) {
@@ -81,6 +85,7 @@ const PatientForm = ({ patient, onSubmit }) => {
         // Limpa o formulário após o cadastro
         setName('');
         setCpf('');
+        setEmail(''); // Limpa o email
         setPhone('');
         setAllergies('');
       }
@@ -142,6 +147,22 @@ const PatientForm = ({ patient, onSubmit }) => {
           />
         </div>
 
+        {/* Novo campo de Email */}
+        <div className="mb-4">
+          <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientEmail">
+            Email (Opcional)
+          </label>
+          <input
+            type="email"
+            id="patientEmail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
+            placeholder="email@exemplo.com"
+            autoComplete="email"
+          />
+        </div>
+
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientPhone">
             Telefone
@@ -175,7 +196,7 @@ const PatientForm = ({ patient, onSubmit }) => {
 
         <button
           type="submit"
-          className="w-full bg-primary-DEFAULT text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
+          className="w-full bg-primary-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
           disabled={loading}
         >
           {loading ? 'Salvando...' : (patient ? 'Salvar Alterações' : 'Cadastrar Paciente')}

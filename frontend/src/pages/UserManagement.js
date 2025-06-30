@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import authService from '../services/authService'; // Usaremos o authService para buscar usuários
 import { useAuth } from '../context/AuthContext'; // Para verificar permissões
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // <-- Adicionado: Importa o componente Link
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -17,12 +17,10 @@ const UserManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      // Agora chamamos o serviço real para buscar usuários do backend
-      const data = await authService.getAllUsers(); // Usa a função do authService
+      const data = await authService.getAllUsers(); // Chama o serviço real para buscar usuários do backend
       setUsers(data);
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
-      // Mensagem de erro mais específica
       setError(err.response?.data?.message || 'Erro ao carregar usuários. Verifique suas permissões ou tente novamente.');
     } finally {
       setLoading(false);
@@ -41,19 +39,19 @@ const UserManagement = () => {
 
   // Funções de CRUD (implementação detalhada virá com o backend)
   const handleEditUser = (userId) => {
-    alert(`Editar usuário com ID: ${userId}`);
+    // alert(`Editar usuário com ID: ${userId}`); // Substituir por modal/navegação
     // Implementar modal ou redirecionamento para UserForm
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
+    if (window.confirm('Tem certeza que deseja excluir este usuário?')) { // Substituir por modal personalizado
       try {
         await authService.deleteUser(userId); // Chama o serviço para excluir
-        alert('Usuário excluído com sucesso!');
+        alert('Usuário excluído com sucesso!'); // Usar um modal de sucesso posteriormente
         fetchUsers(); // Recarrega a lista após exclusão
       } catch (err) {
         console.error('Erro ao excluir usuário:', err);
-        alert(err.response?.data?.message || 'Erro ao excluir usuário. Verifique suas permissões.');
+        alert(err.response?.data?.message || 'Erro ao excluir usuário. Verifique suas permissões.'); // Usar um modal de erro
       }
     }
   };

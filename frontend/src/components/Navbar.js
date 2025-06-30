@@ -23,11 +23,23 @@ const Navbar = () => {
       user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
     );
 
+    // Verifica se o usuário tem permissão para gerenciar usuários (CRUD completo)
+    // Apenas 'admin', 'doctor' e 'secretary' podem gerenciar usuários.
+    const canManageUsers = isAuthenticated && user && (
+      user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
+    );
+
+    // Verifica se o usuário tem permissão para gerenciar pacientes
+    // Admin, Médico e Secretária podem gerenciar pacientes.
+    const canAccessPatients = isAuthenticated && user && (
+      user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
+    );
+
     return (
-        <nav className="bg-primary-DEFAULT p-4 shadow-md font-sans">
+        <nav className="bg-secondary-dark p-4 shadow-md font-sans">
             <div className="container mx-auto flex justify-between items-center">
                 {/* Logo/Nome da Aplicação */}
-                <Link to="/dashboard" className="text-white text-2xl font-bold tracking-wide">
+                <Link to="/dashboard" className="text-primary-dark text-2xl font-bold tracking-wide">
                     MedGestor
                 </Link>
 
@@ -37,21 +49,21 @@ const Navbar = () => {
                         // Links visíveis apenas se o usuário estiver autenticado
                         <>
                             {/* Links com cores mais visíveis */}
-                            <Link to="/dashboard" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                            <Link to="/dashboard" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                 Dashboard
                             </Link>
-                            <Link to="/patients" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
-                                Pacientes
-                            </Link>
-                            {/* Link para Gerenciar Usuários, visível apenas para Admin */}
-                            {user?.role === 'admin' || user.role === 'doctor' || user.role === 'secretary' && ( // Apenas admin pode gerenciar usuários
-                                <Link to="/users" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                            {canAccessPatients && ( // Link para Pacientes
+                                <Link to="/patients" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                                    Pacientes
+                                </Link>
+                            )}
+                            {canManageUsers && ( // Link para Gerenciar Usuários
+                                <Link to="/users" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Gerenciar Usuários
                                 </Link>
                             )}
-                            {/* Link para Registrar Usuário, visível para Admin, Médico e Secretária */}
-                            {canRegisterUsers && (
-                                <Link to="/register" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                            {canRegisterUsers && ( // Link para Registrar Usuário
+                                <Link to="/register" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Registrar Usuário
                                 </Link>
                             )}

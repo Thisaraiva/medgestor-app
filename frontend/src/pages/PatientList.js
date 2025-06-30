@@ -106,7 +106,7 @@ const PatientList = () => {
           {canManagePatients && (
             <button
               onClick={handleAddPatient}
-              className="bg-primary-DEFAULT text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
+              className="bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-DEFAULT transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
             >
               Adicionar Paciente
             </button>
