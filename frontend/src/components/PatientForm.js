@@ -67,11 +67,6 @@ const PatientForm = ({ patient, onSubmit }) => {
     setIsError(false);
     setLoading(true);
 
-    // Ajuste aqui: inclua o email nos dados do paciente.
-    // Se o campo de email no frontend não for preenchido, ele enviará uma string vazia.
-    // O backend, como Patient.js tem allowNull: true para email, deve aceitar string vazia ou null.
-    // Se o backend espera 'null' para campo vazio, você pode ajustar:
-    // const patientData = { name, cpf, email: email || null, phone, allergies };
     const patientData = { name, cpf, email, phone, allergies };
 
 

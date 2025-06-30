@@ -5,13 +5,16 @@ const Joi = require('joi');
 const createSchema = Joi.object({
   name: Joi.string().min(3).max(255).required(),
   cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).required(),
-  email: Joi.string().email().allow(null),
-  phone: Joi.string().allow(null),
-  allergies: Joi.string().allow(null),
+  email: Joi.string().email().allow(null, ''), 
+  phone: Joi.string().allow(null, ''), 
+  allergies: Joi.string().allow(null, ''), 
 });
 
 const updateSchema = Joi.object({
   name: Joi.string().min(3).max(255),
+  cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).messages({
+    'string.pattern.base': 'CPF deve estar no formato 000.000.000-00',
+  }),
   email: Joi.string().email().allow(null),
   phone: Joi.string().allow(null),
   allergies: Joi.string().allow(null),
@@ -39,9 +42,9 @@ const getPatientById = asyncHandler(async (req, res) => {
 });
 
 const updatePatient = asyncHandler(async (req, res) => {
-  const { error, value } = updateSchema.validate(req.body);
+  const { error, value } = updateSchema.validate(req.body, { abortEarly: false, allowUnknown: false });
   if (error) {
-    throw new Error(error.details[0].message);
+    throw new Error(error.details.map(x => x.message).join(', '));
   }
 
   const patient = await patientService.updatePatient(req.params.id, value);
