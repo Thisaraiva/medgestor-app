@@ -3,11 +3,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
-import Register from './pages/UserFormPage';
 import Dashboard from './pages/Dashboard';
 import PatientList from './pages/PatientList';
-import UserManagement from './pages/UserManagement'; // Importa o novo componente
+import UserManagement from './pages/UserManagement';
 import PatientFormPage from './pages/PatientFormPage';
+import UserFormPage from './pages/UserFormPage'; // Importa a nova página de formulário de usuário
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -23,21 +23,20 @@ const App = () => {
                     <Route element={<PrivateRoute />}>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/patients" element={<PatientList />} />
-                        {/* Nova rota para adicionar paciente */}
+                        {/* Rotas para formulário de paciente */}
                         <Route path="/patients/new" element={<PatientFormPage />} />
-                        {/* Nova rota para editar paciente por ID */}
-                        <Route path="/patients/edit/:id" element={<PatientFormPage />} />                    
+                        <Route path="/patients/edit/:id" element={<PatientFormPage />} />
                     </Route>
 
-                    {/* Rota de Registro de Usuário: Protegida por papéis específicos */}
-                    {/* Apenas 'admin', 'doctor' e 'secretary' podem acessar a página de registro de novos usuários. */}
-                    <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
-                        <Route path="/register" element={<Register />} />
-                    </Route>
-
-                    {/* Rota de Gerenciamento de Usuários: Protegida apenas para Admin */}
+                    {/* Rotas de Gerenciamento de Usuários: Protegidas por papéis específicos */}
                     <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
                         <Route path="/users" element={<UserManagement />} />
+                        {/* Nova rota para adicionar usuário */}
+                        <Route path="/users/new" element={<UserFormPage />} />
+                        {/* Nova rota para editar usuário por ID */}
+                        <Route path="/users/edit/:id" element={<UserFormPage />} />
+                        {/* Redireciona /register para /users/new para manter a compatibilidade */}
+                        <Route path="/register" element={<UserFormPage />} />
                     </Route>
 
                     {/* Adicione outras rotas aqui conforme o desenvolvimento avança */}

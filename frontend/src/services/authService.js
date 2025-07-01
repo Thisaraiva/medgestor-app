@@ -1,4 +1,3 @@
-
 // frontend/src/services/authService.js
 
 import axios from 'axios';
@@ -35,6 +34,11 @@ const authService = {
 
   getAllUsers: () => {
     return authApi.get(USERS_API_URL);
+  },
+
+  // Adicionando a função getUserById
+  getUserById: (userId) => {
+    return authApi.get(`${USERS_API_URL}/${userId}`);
   },
 
   updateUser: (userId, userData) => {

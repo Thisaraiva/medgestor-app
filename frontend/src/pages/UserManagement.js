@@ -4,24 +4,33 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import authService from '../services/authService'; // Usaremos o authService para buscar usuários
 import { useAuth } from '../context/AuthContext'; // Para verificar permissões
-import { Link } from 'react-router-dom'; // <-- Adicionado: Importa o componente Link
+import { Link, useNavigate, useLocation } from 'react-router-dom'; // Importa Link, useNavigate e useLocation
+import ConfirmDialog from '../components/ConfirmDialog'; // Importa o componente de confirmação
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false); // Estado para o diálogo de confirmação
+  const [userToDelete, setUserToDelete] = useState(null); // ID do usuário a ser excluído
+  const [actionMessage, setActionMessage] = useState(''); // Para mensagens de sucesso/erro (adição, edição, exclusão)
+  const [isActionError, setIsActionError] = useState(false); // Para indicar se a mensagem é de erro
   const { user: currentUser } = useAuth(); // Pega o usuário logado para verificar permissões
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Função para buscar todos os usuários
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await authService.getAllUsers(); // Chama o serviço real para buscar usuários do backend
-      setUsers(data);
+      const response = await authService.getAllUsers(); // 'response' é o objeto completo do Axios
+      // Acessa 'response.data' para obter o array de usuários
+      setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
       setError(err.response?.data?.message || 'Erro ao carregar usuários. Verifique suas permissões ou tente novamente.');
+      setUsers([]); // Garante que users seja um array vazio em caso de erro
     } finally {
       setLoading(false);
     }
@@ -35,23 +44,46 @@ const UserManagement = () => {
       setError('Você não tem permissão para acessar esta página.');
       setLoading(false);
     }
-  }, [currentUser]); // Dependência em currentUser para re-executar se o usuário mudar
 
-  // Funções de CRUD (implementação detalhada virá com o backend)
-  const handleEditUser = (userId) => {
-    // alert(`Editar usuário com ID: ${userId}`); // Substituir por modal/navegação
-    // Implementar modal ou redirecionamento para UserForm
+    // Lida com mensagens passadas via state de navegação
+    if (location.state && location.state.message) {
+      setActionMessage(location.state.message);
+      setIsActionError(location.state.isError || false);
+      navigate(location.pathname, { replace: true, state: {} }); // Limpa a mensagem do state
+      setTimeout(() => setActionMessage(''), 3000);
+    }
+  }, [currentUser, location.state]); // Dependência em currentUser e location.state para re-executar se o usuário/rota mudar
+
+  // Funções de CRUD
+  const handleAddUser = () => {
+    navigate('/users/new'); // Navega para a página de adição de usuário
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Tem certeza que deseja excluir este usuário?')) { // Substituir por modal personalizado
+  const handleEditUser = (userId) => {
+    navigate(`/users/edit/${userId}`); // Navega para a página de edição de usuário
+  };
+
+  const confirmDeleteUser = (userId) => {
+    setUserToDelete(userId);
+    setShowConfirmDialog(true);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    setShowConfirmDialog(false); // Esconde o diálogo de confirmação
+    if (userToDelete) {
       try {
-        await authService.deleteUser(userId); // Chama o serviço para excluir
-        alert('Usuário excluído com sucesso!'); // Usar um modal de sucesso posteriormente
+        await authService.deleteUser(userToDelete); // Chama o serviço para excluir
+        setActionMessage('Usuário excluído com sucesso!'); // Mensagem de sucesso
+        setIsActionError(false);
         fetchUsers(); // Recarrega a lista após exclusão
       } catch (err) {
         console.error('Erro ao excluir usuário:', err);
-        alert(err.response?.data?.message || 'Erro ao excluir usuário. Verifique suas permissões.'); // Usar um modal de erro
+        const errorMessage = err.response?.data?.message || 'Erro ao excluir usuário. Verifique suas permissões.';
+        setActionMessage(errorMessage); // Mensagem de erro
+        setIsActionError(true);
+      } finally {
+        setUserToDelete(null);
+        setTimeout(() => setActionMessage(''), 3000); // Limpa a mensagem após 3 segundos
       }
     }
   };
@@ -80,14 +112,21 @@ const UserManagement = () => {
           <h1 className="text-4xl font-bold text-primary-dark">Gerenciamento de Usuários</h1>
           {/* O botão "Adicionar Novo Usuário" é visível para admin, doctor e secretary */}
           {currentUser?.role && ['admin', 'doctor', 'secretary'].includes(currentUser.role) && (
-            <Link
-              to="/register" // Redireciona para a página de registro de usuários
-              className="bg-primary-DEFAULT text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
+            <button
+              onClick={handleAddUser} // Usa a nova função para navegar
+              className="bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-DEFAULT transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
             >
               Adicionar Novo Usuário
-            </Link>
+            </button>
           )}
         </div>
+
+        {/* Mensagem de Ação (Sucesso/Erro) */}
+        {actionMessage && (
+          <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isActionError ? 'bg-error text-white' : 'bg-success text-white'}`}>
+            {actionMessage}
+          </div>
+        )}
 
         {users.length === 0 ? (
           <p className="text-center text-text-light text-lg mt-10">Nenhum usuário cadastrado ainda.</p>
@@ -130,7 +169,7 @@ const UserManagement = () => {
                         Editar
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(u.id)}
+                        onClick={() => confirmDeleteUser(u.id)} // Usa o novo modal de confirmação
                         className="text-error hover:text-red-700"
                       >
                         Excluir
@@ -143,6 +182,13 @@ const UserManagement = () => {
           </div>
         )}
       </div>
+      {/* Diálogo de Confirmação para Exclusão de Usuário */}
+      <ConfirmDialog
+        show={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleDeleteConfirmed}
+        message="Tem certeza que deseja excluir este usuário?"
+      />
     </div>
   );
 };
