@@ -74,9 +74,11 @@ const PatientForm = ({ patient, onSubmit }) => {
       if (patient) {
         await patientService.updatePatient(patient.id, patientData); // Chama o serviço de atualização
         setMessage('Paciente atualizado com sucesso!');
+        onSubmit('Paciente atualizado com sucesso!', false); // Passa mensagem e status para o pai
       } else {
         await patientService.createPatient(patientData); // Chama o serviço de criação
         setMessage('Paciente cadastrado com sucesso!');
+        onSubmit('Paciente cadastrado com sucesso!', false); // Passa mensagem e status para o pai
         // Limpa o formulário após o cadastro
         setName('');
         setCpf('');
@@ -85,11 +87,11 @@ const PatientForm = ({ patient, onSubmit }) => {
         setAllergies('');
       }
       setIsError(false);
-      onSubmit(); // Chama a função onSubmit passada pelas props para notificar o pai
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erro ao salvar paciente. Tente novamente.';
       setMessage(errorMessage);
       setIsError(true);
+      onSubmit(errorMessage, true); // Passa mensagem de erro e status para o pai
       console.error('Erro ao salvar paciente:', err);
     } finally {
       setLoading(false);
@@ -97,7 +99,7 @@ const PatientForm = ({ patient, onSubmit }) => {
   };
 
   return (
-    <div className="bg-background-DEFAULT p-6 rounded-xl">
+    <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium"> {/* Adicionado shadow aqui */}
       <h2 className="text-2xl font-bold text-primary-dark mb-6 text-center">
         {patient ? 'Editar Paciente' : 'Cadastrar Novo Paciente'}
       </h2>

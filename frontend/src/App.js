@@ -3,10 +3,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
-import Register from './pages/Register';
+import Register from './pages/UserFormPage';
 import Dashboard from './pages/Dashboard';
 import PatientList from './pages/PatientList';
 import UserManagement from './pages/UserManagement'; // Importa o novo componente
+import PatientFormPage from './pages/PatientFormPage';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -22,6 +23,10 @@ const App = () => {
                     <Route element={<PrivateRoute />}>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/patients" element={<PatientList />} />
+                        {/* Nova rota para adicionar paciente */}
+                        <Route path="/patients/new" element={<PatientFormPage />} />
+                        {/* Nova rota para editar paciente por ID */}
+                        <Route path="/patients/edit/:id" element={<PatientFormPage />} />                    
                     </Route>
 
                     {/* Rota de Registro de Usuário: Protegida por papéis específicos */}

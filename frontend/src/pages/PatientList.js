@@ -1,31 +1,30 @@
 // frontend/src/pages/PatientList.js
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom'; // Importa useNavigate e useLocation
 import Navbar from '../components/Navbar';
-import patientService from '../services/patientService'; // Importa o serviço de paciente
-import PatientForm from '../components/PatientForm'; // Importa o formulário de paciente
-import { useAuth } from '../context/AuthContext'; // Para verificar permissões
-import Modal from '../components/Modal'; // Importa o componente Modal
+import patientService from '../services/patientService';
+import { useAuth } from '../context/AuthContext';
 import ConfirmDialog from '../components/ConfirmDialog'; // Importa o componente de confirmação
 
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showPatientForm, setShowPatientForm] = useState(false); // Estado para controlar visibilidade do formulário
-  const [editingPatient, setEditingPatient] = useState(null); // Para armazenar o paciente sendo editado
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false); // Estado para o diálogo de confirmação
-  const [patientToDelete, setPatientToDelete] = useState(null); // ID do paciente a ser excluído
-  const [actionMessage, setActionMessage] = useState(''); // Para mensagens de sucesso/erro (adição, edição, exclusão)
-  const [isActionError, setIsActionError] = useState(false); // Para indicar se a mensagem é de erro
-  const { user } = useAuth(); // Obtém o usuário logado
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [actionMessage, setActionMessage] = useState('');
+  const [isActionError, setIsActionError] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate(); // Hook para navegação
+  const location = useLocation(); // Hook para acessar o state da localização
 
   // Função para buscar pacientes do backend
   const fetchPatients = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await patientService.getPatients(); // Chama o serviço para buscar pacientes
+      const data = await patientService.getPatients();
       setPatients(data);
     } catch (err) {
       console.error('Erro ao buscar pacientes:', err);
@@ -38,17 +37,24 @@ const PatientList = () => {
   // Efeito para carregar pacientes quando o componente é montado
   useEffect(() => {
     fetchPatients();
-  }, []);
+    // Verifica se há uma mensagem no state da localização (vindo do PatientFormPage)
+    if (location.state && location.state.message) {
+      setActionMessage(location.state.message);
+      setIsActionError(location.state.isError || false);
+      // Limpa a mensagem do state para que não apareça novamente ao navegar
+      navigate(location.pathname, { replace: true, state: {} });
+      setTimeout(() => setActionMessage(''), 3000);
+    }
+  }, [location.state]); // Adicionado location.state como dependência para reagir a mensagens de navegação
+
 
   // Funções para CRUD
   const handleAddPatient = () => {
-    setEditingPatient(null); // Limpa qualquer paciente em edição
-    setShowPatientForm(true); // Mostra o formulário para adicionar
+    navigate('/patients/new'); // Navega para a página de adição de paciente
   };
 
   const handleEditPatient = (patient) => {
-    setEditingPatient(patient); // Define o paciente para edição
-    setShowPatientForm(true); // Mostra o formulário para edição
+    navigate(`/patients/edit/${patient.id}`); // Navega para a página de edição de paciente
   };
 
   const confirmDeletePatient = (patientId) => {
@@ -57,32 +63,23 @@ const PatientList = () => {
   };
 
   const handleDeleteConfirmed = async () => {
-    setShowConfirmDialog(false); // Esconde o diálogo de confirmação
+    setShowConfirmDialog(false);
     if (patientToDelete) {
       try {
-        await patientService.deletePatient(patientToDelete); // Chama o serviço de exclusão
-        setActionMessage('Paciente excluído com sucesso!'); // Mensagem de sucesso
+        await patientService.deletePatient(patientToDelete);
+        setActionMessage('Paciente excluído com sucesso!');
         setIsActionError(false);
-        fetchPatients(); // Recarrega a lista após exclusão
+        fetchPatients();
       } catch (err) {
         console.error('Erro ao excluir paciente:', err);
         const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erro ao excluir paciente. Tente novamente.';
-        setActionMessage(errorMessage); // Mensagem de erro
+        setActionMessage(errorMessage);
         setIsActionError(true);
       } finally {
         setPatientToDelete(null);
-        setTimeout(() => setActionMessage(''), 3000); // Limpa a mensagem após 3 segundos
+        setTimeout(() => setActionMessage(''), 3000);
       }
     }
-  };
-
-  const handleFormSubmit = (message, isError) => { // Recebe message e isError do PatientForm
-    setShowPatientForm(false); // Esconde o formulário após submissão
-    setEditingPatient(null);    // Limpa o paciente em edição
-    setActionMessage(message);  // Define a mensagem de sucesso/erro do formulário
-    setIsActionError(isError);  // Define se a mensagem é de erro
-    fetchPatients();            // Recarrega a lista de pacientes
-    setTimeout(() => setActionMessage(''), 3000); // Limpa a mensagem após 3 segundos
   };
 
   // Verifica se o usuário tem permissão para gerenciar pacientes (Secretária, Médico, Admin)
@@ -129,10 +126,8 @@ const PatientList = () => {
           </div>
         )}
 
-        {/* Modal para Adicionar/Editar Paciente */}
-        <Modal show={showPatientForm} onClose={() => setShowPatientForm(false)}>
-          <PatientForm patient={editingPatient} onSubmit={handleFormSubmit} />
-        </Modal>
+        {/* Removido Modal para Adicionar/Editar Paciente */}
+        {/* Removido PatientForm */}
 
         {/* Diálogo de Confirmação para Exclusão */}
         <ConfirmDialog
