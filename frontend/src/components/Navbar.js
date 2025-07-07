@@ -17,16 +17,10 @@ const Navbar = () => {
         navigate('/'); // Redireciona para a página de login
     };
 
-    // Verifica se o usuário tem permissão para registrar novos usuários
-    // Apenas 'admin', 'doctor' e 'secretary' podem registrar.
-    const canRegisterUsers = isAuthenticated && user && (
-      user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
-    );
-
     // Verifica se o usuário tem permissão para gerenciar usuários (CRUD completo)
-    // Apenas 'admin', 'doctor' e 'secretary' podem gerenciar usuários.
+    // Admin e Secretária podem gerenciar usuários.
     const canManageUsers = isAuthenticated && user && (
-      user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
+      user.role === 'admin' || user.role === 'secretary'
     );
 
     // Verifica se o usuário tem permissão para gerenciar pacientes
@@ -35,39 +29,64 @@ const Navbar = () => {
       user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
     );
 
+    // Verifica se o usuário tem permissão para gerenciar agendamentos
+    // Admin, Médico e Secretária podem gerenciar agendamentos.
+    const canAccessAppointments = isAuthenticated && user && (
+      user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
+    );
+
+    // Verifica se o usuário tem permissão para gerenciar planos de saúde
+    // Admin e Secretária podem gerenciar planos de saúde.
+    const canManageInsurancePlans = isAuthenticated && user && (
+        user.role === 'admin' || user.role === 'secretary'
+    );
+
     return (
-        <nav className="bg-secondary-dark p-4 shadow-md font-sans">
+        <nav className="bg-primary-dark p-4 shadow-md font-sans">
             <div className="container mx-auto flex justify-between items-center">
                 {/* Logo/Nome da Aplicação */}
-                <Link to="/dashboard" className="text-primary-dark text-2xl font-bold tracking-wide">
+                <Link to="/dashboard" className="text-white text-2xl font-bold tracking-wide">
                     MedGestor
                 </Link>
 
                 {/* Links de Navegação */}
-                <div>
+                <div className="flex items-center space-x-4"> {/* Adicionado flex e space-x para espaçamento */}
                     {isAuthenticated ? (
                         // Links visíveis apenas se o usuário estiver autenticado
                         <>
-                            {/* Links com cores mais visíveis */}
-                            <Link to="/dashboard" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                            <Link to="/dashboard" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                 Dashboard
                             </Link>
                             {canAccessPatients && ( // Link para Pacientes
-                                <Link to="/patients" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                                <Link to="/patients" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Pacientes
                                 </Link>
                             )}
+                            {canAccessAppointments && ( // Link para Agendamentos
+                                <Link to="/appointments" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                                    Agendamentos
+                                </Link>
+                            )}
                             {canManageUsers && ( // Link para Gerenciar Usuários
-                                <Link to="/users" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                                <Link to="/users" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Gerenciar Usuários
                                 </Link>
                             )}
-                            {canRegisterUsers && ( // Link para Registrar Usuário
-                                <Link to="/register" className="text-primary-dark hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
-                                    Registrar Usuário
+                            {canManageInsurancePlans && ( // Link para Planos de Saúde
+                                <Link to="/insurance-plans" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
+                                    Planos de Saúde
                                 </Link>
                             )}
-                            {/* Botão de Sair/Logout com cores ajustadas */}
+                            {/* A opção de "Registrar Usuário" foi removida daqui, pois o gerenciamento é feito em /users */}
+                            
+                            {/* Exibe o nome e papel do usuário logado */}
+                            {user && (
+                                <span className="text-white text-sm ml-4">
+                                    Olá, {user.name} ({user.role})
+                                </span>
+                            )}
+
+                            {/* Botão de Sair/Logout */}
                             <button
                                 onClick={handleLogout}
                                 className="ml-4 bg-white text-primary-DEFAULT px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"

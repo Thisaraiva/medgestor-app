@@ -3,6 +3,7 @@
 import React from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext'; // Importa o hook de autenticação
+import { Link } from 'react-router-dom'; // Importa Link para navegação
 
 const Dashboard = () => {
   const { user } = useAuth(); // Obtém os dados do usuário logado
@@ -22,12 +23,24 @@ const Dashboard = () => {
             <p className="text-text-light">
               Aqui você pode gerenciar usuários, configurações do sistema e ter uma visão geral completa.
             </p>
-            {/* Adicione mais cards ou links específicos para o admin */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
+              <Link to="/users" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Gerenciar Usuários</h3>
                 <p className="text-sm text-text-light">Adicione, edite ou remova contas de médicos e secretárias.</p>
-              </div>
+              </Link>
+              <Link to="/appointments" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
+                <h3 className="font-bold text-lg text-primary-dark">Gerenciar Agendamentos</h3>
+                <p className="text-sm text-text-light">Crie, edite e visualize agendamentos de consultas.</p>
+              </Link>
+              <Link to="/patients" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
+                <h3 className="font-bold text-lg text-primary-dark">Gerenciar Pacientes</h3>
+                <p className="text-sm text-text-light">Cadastre e atualize informações de pacientes.</p>
+              </Link>
+              {/* NOVO: Cartão para Gerenciar Planos de Saúde para Admin */}
+              <Link to="/insurance-plans" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
+                <h3 className="font-bold text-lg text-primary-dark">Gerenciar Planos de Saúde</h3>
+                <p className="text-sm text-text-light">Cadastre e atualize informações de planos de saúde.</p>
+              </Link>
               <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
                 <h3 className="font-bold text-lg text-primary-dark">Configurações do Sistema</h3>
                 <p className="text-sm text-text-light">Ajuste parâmetros globais da aplicação.</p>
@@ -42,16 +55,15 @@ const Dashboard = () => {
             <p className="text-text-light">
               Visualize suas próximas consultas, acesse prontuários e emita receitas.
             </p>
-            {/* Adicione mais cards ou links específicos para o médico */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
-                <h3 className="font-bold text-lg text-primary-dark">Próximas Consultas</h3>
-                <p className="text-sm text-text-light">Veja os agendamentos do dia e da semana.</p>
-              </div>
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
-                <h3 className="font-bold text-lg text-primary-dark">Acessar Prontuários</h3>
-                <p className="text-sm text-text-light">Consulte o histórico médico dos pacientes.</p>
-              </div>
+              <Link to="/appointments" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
+                <h3 className="font-bold text-lg text-primary-dark">Meus Agendamentos</h3>
+                <p className="text-sm text-text-light">Visualize e gerencie suas consultas.</p>
+              </Link>
+              <Link to="/patients" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
+                <h3 className="font-bold text-lg text-primary-dark">Meus Pacientes</h3>
+                <p className="text-sm text-text-light">Acesse o cadastro e prontuários dos seus pacientes.</p>
+              </Link>
               <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
                 <h3 className="font-bold text-lg text-primary-dark">Emitir Receitas</h3>
                 <p className="text-sm text-text-light">Gere e imprima receitas médicas.</p>
@@ -66,20 +78,24 @@ const Dashboard = () => {
             <p className="text-text-light">
               Gerencie agendamentos, pacientes e o fluxo do consultório.
             </p>
-            {/* Adicione mais cards ou links específicos para a secretária */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
+              <Link to="/appointments/new" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Agendar Consultas</h3>
                 <p className="text-sm text-text-light">Crie e edite agendamentos.</p>
-              </div>
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
+              </Link>
+              <Link to="/patients" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Gerenciar Pacientes</h3>
                 <p className="text-sm text-text-light">Cadastre e atualize informações de pacientes.</p>
-              </div>
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
+              </Link>
+              <Link to="/appointments" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Consultar Agenda</h3>
                 <p className="text-sm text-text-light">Visualize a agenda de todos os médicos.</p>
-              </div>
+              </Link>
+              {/* NOVO: Cartão para Gerenciar Planos de Saúde para Secretária */}
+              <Link to="/insurance-plans" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
+                <h3 className="font-bold text-lg text-primary-dark">Gerenciar Planos de Saúde</h3>
+                <p className="text-sm text-text-light">Cadastre e atualize informações de planos de saúde.</p>
+              </Link>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
 const { faker } = require('@faker-js/faker');
-const { format } = require('date-fns');
+const moment = require('moment'); // Importa Moment.js
 
 module.exports = {
   async up(queryInterface) {
@@ -17,7 +17,7 @@ module.exports = {
         id: uuidv4(),
         doctorId: doctors[0][0].id,
         patientId: patients[0][0].id,
-        date: '2025-07-01T10:00:00Z', // Data fixa para testes
+        date: '2025-07-01T10:00:00Z', // Data fixa para testes (ISO 8601 UTC)
         type: 'initial',
         insurance: true,
         createdAt: new Date(),
@@ -25,11 +25,13 @@ module.exports = {
       },
       ...Array.from({ length: 2 }, () => {
         const futureDate = faker.date.future();
+        // Converte a data gerada pelo faker (que é um objeto Date) para Moment,
+        // e depois para ISO 8601 UTC string.
         return {
           id: uuidv4(),
           doctorId: faker.helpers.arrayElement(doctors[0]).id,
           patientId: faker.helpers.arrayElement(patients[0]).id,
-          date: format(futureDate, "yyyy-MM-dd'T'HH:mm:ss'Z'"),
+          date: moment(futureDate).toISOString(), // Usando moment().toISOString()
           type: faker.helpers.arrayElement(['initial', 'return']),
           insurance: faker.datatype.boolean(),
           createdAt: new Date(),
