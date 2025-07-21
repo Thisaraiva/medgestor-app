@@ -15,6 +15,15 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
       key: 'id',
     },
   },
+  appointmentId: {
+    type: DataTypes.UUID,
+    allowNull: true, // Pode ser nulo se o prontuário for criado fora de um agendamento
+    references: {
+      model: 'appointments',
+      key: 'id',
+    },
+    onDelete: 'SET NULL', // Se o agendamento for excluído, o prontuário permanece, mas o link é removido
+  },
   diagnosis: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -40,6 +49,7 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
 // Adicionar a função associate
 MedicalRecord.associate = (models) => {
   MedicalRecord.belongsTo(models.Patient, { foreignKey: 'patientId' });
+  MedicalRecord.belongsTo(models.Appointment, { foreignKey: 'appointmentId' }); // NOVA ASSOCIAÇÃO
 };
 
 module.exports = MedicalRecord;

@@ -17,6 +17,15 @@ module.exports = {
         },
         onDelete: 'CASCADE',
       },
+      appointmentId: {
+        type: Sequelize.UUID,
+        allowNull: true, // Pode ser nulo se o prontuário for criado fora de um agendamento
+        references: {
+          model: 'appointments',
+          key: 'id',
+        },
+        onDelete: 'SET NULL', // Se o agendamento for excluído, o prontuário permanece, mas o link é removido
+      },
       diagnosis: {
         type: Sequelize.TEXT,
         allowNull: true,
@@ -29,7 +38,7 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      date: { 
+      date: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW,

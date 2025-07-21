@@ -38,7 +38,7 @@ const createSchema = Joi.object({
       'any.required': 'ID do plano de saúde é obrigatório quando "seguro" é true',
       'string.uuid': 'ID do plano de saúde deve ser um UUID válido',
     }),
-    otherwise: Joi.forbidden(), // Não permitido se 'insurance' for false
+    otherwise: Joi.allow(null), // CORRIGIDO: Permite que insurancePlanId seja null se insurance for false
   }).messages({
     'string.uuid': 'ID do plano de saúde deve ser um UUID válido',
   }),
@@ -69,7 +69,7 @@ const updateSchema = Joi.object({
       'any.required': 'ID do plano de saúde é obrigatório quando "seguro" é true',
       'string.uuid': 'ID do plano de saúde deve ser um UUID válido',
     }),
-    otherwise: Joi.forbidden(), // Não permitido se 'insurance' for false
+    otherwise: Joi.allow(null), // CORRIGIDO: Permite que insurancePlanId seja null se insurance for false
   }).messages({
     'string.uuid': 'ID do plano de saúde deve ser um UUID válido',
   }),

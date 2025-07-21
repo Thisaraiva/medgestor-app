@@ -1,6 +1,7 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
 const { faker } = require('@faker-js/faker');
+const moment = require('moment'); // Importa Moment.js
 
 module.exports = {
     async up(queryInterface) {
@@ -16,7 +17,7 @@ module.exports = {
             diagnosis: faker.lorem.sentence(),
             treatment: faker.lorem.sentence(),
             notes: faker.lorem.sentence(),
-            date: faker.date.recent(), // Adicionado o campo 'date' com data recente
+            date: moment(faker.date.recent()).toISOString(), // Usando moment().toISOString()
             createdAt: new Date(),
             updatedAt: new Date(),
         }));

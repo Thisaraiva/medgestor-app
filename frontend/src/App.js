@@ -14,6 +14,9 @@ import PatientList from './pages/PatientList';
 import PatientFormPage from './pages/PatientFormPage';
 import AppointmentList from './pages/AppointmentList'; // Importa a nova página de lista de agendamentos
 import AppointmentFormPage from './pages/AppointmentFormPage'; // Importa a nova página de formulário de agendamentos
+import InsurancePlanListPage from './pages/InsurancePlanList'; // NOVO: Importa a lista de planos
+import InsurancePlanFormPage from './pages/InsurancePlanFormPage'; // NOVO: Importa o formulário de planos
+
 
 function App() {
   return (
@@ -49,6 +52,16 @@ function App() {
             <Route path="/appointments/new" element={<AppointmentFormPage />} />
             <Route path="/appointments/edit/:id" element={<AppointmentFormPage />} />
           </Route>
+
+          {/* NOVO: Rotas de Planos de Saúde (Admin e Secretário) */}
+          <Route element={<PrivateRoute roles={['admin', 'secretary']} />}>
+            <Route path="/insurance-plans" element={<InsurancePlanListPage />} />
+            <Route path="/insurance-plans/new" element={<InsurancePlanFormPage />} />
+            <Route path="/insurance-plans/edit/:id" element={<InsurancePlanFormPage />} />
+          </Route>
+
+          {/* Adicione uma rota para 404 Not Found se desejar */}
+          <Route path="*" element={<p className="text-center text-xl mt-20">404 - Page Not Found</p>} />
 
           {/* Adicione outras rotas protegidas aqui conforme necessário */}
         </Routes>
