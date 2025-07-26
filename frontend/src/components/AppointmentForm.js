@@ -40,7 +40,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
         const patientsResponse = await patientService.getPatients();
         setPatients(patientsResponse);
 
-        const insurancePlansResponse = await insurancePlanService.getAllInsurancePlans();
+        const insurancePlansResponse = await insurancePlanService.getAllActiveInsurancePlans();
         setInsurancePlans(insurancePlansResponse.data);
 
       } catch (err) {

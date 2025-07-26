@@ -11,6 +11,7 @@ const insurancePlanSchema = Joi.object({
     'any.required': 'Nome do convênio é obrigatório',
   }),
   description: Joi.string().allow(null, '').optional(),
+  // O isActive pode ser opcional na criação, mas é importante para o gerenciamento
   isActive: Joi.boolean().optional(),
 });
 
@@ -25,16 +26,28 @@ const createInsurancePlan = async (data) => {
     throw new ValidationError('Já existe um convênio com este nome.');
   }
 
-  return InsurancePlan.create(data);
+  // Define isActive como true por padrão se não for fornecido na criação
+  const planToCreate = { ...data, isActive: data.isActive === undefined ? true : data.isActive };
+  return InsurancePlan.create(planToCreate);
 };
 
+// MODIFICAÇÃO AQUI: Esta função agora retorna TODOS os planos, ativos ou inativos.
 const getAllInsurancePlans = async () => {
   return InsurancePlan.findAll({
-    where: { isActive: true }, // Apenas planos ativos
+    attributes: ['id', 'name', 'description', 'isActive'], // Adiciona isActive para ser retornado
+    order: [['name', 'ASC']],
+  });
+};
+
+// NOVA FUNÇÃO: Para obter apenas planos de saúde ativos (usada em agendamentos)
+const getActiveInsurancePlans = async () => {
+  return InsurancePlan.findAll({
+    where: { isActive: true },
     attributes: ['id', 'name', 'description'],
     order: [['name', 'ASC']],
   });
 };
+
 
 const getInsurancePlanById = async (id) => {
   const plan = await InsurancePlan.findByPk(id);
@@ -50,6 +63,7 @@ const updateInsurancePlan = async (id, data) => {
     throw new NotFoundError('Plano de saúde não encontrado.');
   }
 
+  // O schema de validação para update já lida com isActive como opcional
   const { error } = insurancePlanSchema.validate(data, { allowUnknown: true, abortEarly: false });
   if (error) {
     throw new ValidationError(error.details.map(x => x.message).join(', '));
@@ -76,7 +90,8 @@ const deleteInsurancePlan = async (id) => {
 
 module.exports = {
   createInsurancePlan,
-  getAllInsurancePlans,
+  getAllInsurancePlans, // Esta agora retorna todos
+  getActiveInsurancePlans, // Nova função para pegar apenas ativos
   getInsurancePlanById,
   updateInsurancePlan,
   deleteInsurancePlan,

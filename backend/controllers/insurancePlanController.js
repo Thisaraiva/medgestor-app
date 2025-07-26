@@ -36,13 +36,23 @@ const createInsurancePlan = asyncHandler(async (req, res) => {
 });
 
 /**
- * Retrieves all active insurance plans.
+ * Retrieves all insurance plans (active and inactive).
  * Access allowed to all authenticated users.
  */
 const getAllInsurancePlans = asyncHandler(async (req, res) => {
-  const plans = await insurancePlanService.getAllInsurancePlans();
+  const plans = await insurancePlanService.getAllInsurancePlans(); // Agora retorna todos
   res.status(200).json(plans);
 });
+
+/**
+ * Retrieves all active insurance plans.
+ * Access allowed to all authenticated users (for selection in appointments).
+ */
+const getAllActiveInsurancePlans = asyncHandler(async (req, res) => {
+  const plans = await insurancePlanService.getActiveInsurancePlans(); // Nova função
+  res.status(200).json(plans);
+});
+
 
 /**
  * Retrieves an insurance plan by ID.
@@ -77,7 +87,8 @@ const deleteInsurancePlan = asyncHandler(async (req, res) => {
 
 module.exports = {
   createInsurancePlan,
-  getAllInsurancePlans,
+  getAllInsurancePlans, // Exporta a função que retorna todos
+  getAllActiveInsurancePlans, // Exporta a nova função para ativos
   getInsurancePlanById,
   updateInsurancePlan,
   deleteInsurancePlan,

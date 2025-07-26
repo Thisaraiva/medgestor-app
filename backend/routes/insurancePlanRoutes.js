@@ -17,8 +17,11 @@ const validate = (req, res, next) => {
 // POST /api/insurance-plans - Creates a new plan (Admin only)
 router.post('/', authMiddleware, restrictTo('admin', 'secretary'), insurancePlanController.createInsurancePlan);
 
-// GET /api/insurance-plans - Gets all active plans (all authenticated users)
+// GET /api/insurance-plans - Gets all insurance plans (active and inactive) for management
 router.get('/', authMiddleware, insurancePlanController.getAllInsurancePlans);
+
+// NEW ROUTE: GET /api/insurance-plans/active - Gets only active insurance plans (for appointment selection)
+router.get('/active', authMiddleware, insurancePlanController.getAllActiveInsurancePlans);
 
 // GET /api/insurance-plans/:id - Gets a plan by ID (all authenticated users)
 router.get(

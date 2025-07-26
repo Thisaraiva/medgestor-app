@@ -32,11 +32,19 @@ insurancePlanApi.interceptors.request.use(
  */
 const insurancePlanService = {
   /**
-   * Retrieves all active insurance plans.
+   * Retrieves all insurance plans (active and inactive) for management purposes.
    * @returns {Promise<object>} A promise that resolves to the API response (containing the list of plans in response.data).
    */
   getAllInsurancePlans: () => {
-    return insurancePlanApi.get(INSURANCE_PLANS_API_URL);
+    return insurancePlanApi.get(INSURANCE_PLANS_API_URL); // Esta rota agora retorna todos os planos
+  },
+
+  /**
+   * Retrieves all ACTIVE insurance plans for selection in contexts like appointment creation.
+   * @returns {Promise<object>} A promise that resolves to the API response (containing the list of active plans in response.data).
+   */
+  getAllActiveInsurancePlans: () => {
+    return insurancePlanApi.get(`${INSURANCE_PLANS_API_URL}/active`); // Nova rota para planos ativos
   },
 
   /**
