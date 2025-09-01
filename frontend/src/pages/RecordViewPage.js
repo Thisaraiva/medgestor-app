@@ -88,9 +88,8 @@ const RecordViewPage = () => {
           {canManageRecords && (
             <button
               onClick={() => navigate(`/patients/${patientId}/medical-records/new`)}
-              className="bg-primary-DEFAULT text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-dark transition duration-200 flex items-center"
-            >
-              <FaPlus className="mr-2" />
+              className="bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-DEFAULT transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
+            >              
               Novo Prontuário
             </button>
           )}

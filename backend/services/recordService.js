@@ -23,6 +23,12 @@ const formatRecord = (record) => {
   const formattedRecord = record.toJSON();
   formattedRecord.date = moment.utc(formattedRecord.date).tz(APP_TIMEZONE).format('DD/MM/YYYY HH:mm');
 
+  // Adiciona a propriedade do paciente se ela existir
+  if (formattedRecord.Patient) {
+      formattedRecord.patient = formattedRecord.Patient;
+      delete formattedRecord.Patient;
+  }
+
   if (formattedRecord.Appointment) {
     formattedRecord.appointment = {
       ...formattedRecord.Appointment,
@@ -136,6 +142,7 @@ const updateRecord = async (id, data) => {
 
   await record.update(dataToUpdate);
 
+  // CORREÇÃO: Busca o prontuário atualizado com as inclusões de paciente e agendamento
   const updatedRecord = await MedicalRecord.findByPk(id, {
     include: commonIncludes,
   });

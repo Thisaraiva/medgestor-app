@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import medicalRecordService from '../services/medicalRecordService';
 
-const RecordForm = ({ patientId, appointmentId, recordId, onSave, onCancel }) => {
+const RecordForm = ({ patientId, recordId, initialData, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     diagnosis: '',
     treatment: '',
@@ -12,29 +12,16 @@ const RecordForm = ({ patientId, appointmentId, recordId, onSave, onCancel }) =>
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Carrega os dados do prontuário para edição, se recordId for fornecido
+  // Carrega os dados iniciais passados por prop
   useEffect(() => {
-    const fetchRecord = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const record = await medicalRecordService.getRecordById(recordId);
-        setFormData({
-          diagnosis: record.diagnosis || '',
-          treatment: record.treatment || '',
-          notes: record.notes || '',
-        });
-      } catch (err) {
-        setError('Erro ao carregar o prontuário. Por favor, tente novamente.');
-        console.error('Erro ao carregar prontuário:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (recordId) {
-      fetchRecord();
+    if (initialData) {
+      setFormData({
+        diagnosis: initialData.diagnosis || '',
+        treatment: initialData.treatment || '',
+        notes: initialData.notes || '',
+      });
     }
-  }, [recordId]);
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,21 +38,18 @@ const RecordForm = ({ patientId, appointmentId, recordId, onSave, onCancel }) =>
 
     try {
       if (recordId) {
-        // Na atualização, envia apenas os campos do formulário.
         await medicalRecordService.updateRecord(recordId, formData);
       } else {
-        // Na criação, inclui os IDs de paciente e agendamento, além da data.
         const dataToSave = {
           ...formData,
           patientId,
-          appointmentId,
           date: new Date().toISOString(),
         };
         await medicalRecordService.createRecord(dataToSave);
       }
       onSave();
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Erro ao salvar o prontuário. Por favor, verifique os dados.';
+      const errorMessage = err.response?.data?.error?.message || 'Erro ao salvar o prontuário. Por favor, verifique os dados.';
       setError(errorMessage);
       console.error('Erro ao salvar prontuário:', err);
     } finally {

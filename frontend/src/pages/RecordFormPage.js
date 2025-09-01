@@ -1,9 +1,8 @@
 // frontend/src/pages/RecordFormPage.js
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import RecordForm from '../components/RecordForm'; // Importa o componente de formulário
+import RecordForm from '../components/RecordForm';
 import medicalRecordService from '../services/medicalRecordService';
 import patientService from '../services/patientService';
 
@@ -11,8 +10,8 @@ const RecordFormPage = () => {
   const { patientId, recordId } = useParams();
   const navigate = useNavigate();
 
+  const [patient, setPatient] = useState(null);
   const [initialData, setInitialData] = useState(null);
-  const [patientName, setPatientName] = useState('Paciente');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,17 +20,29 @@ const RecordFormPage = () => {
       setLoading(true);
       setError(null);
       try {
+        let patientData = null;
+        let recordData = null;
+
         if (recordId) {
           // Modo de Edição
-          const record = await medicalRecordService.getRecordById(recordId);
-          setInitialData(record);
-          setPatientName(record.patient.name);
+          recordData = await medicalRecordService.getRecordById(recordId);
+          patientData = recordData.patient;
         } else if (patientId) {
           // Modo de Criação
-          const patient = await patientService.getPatientById(patientId);
-          setPatientName(patient.name);
-          setInitialData({ patientId, appointmentId: null });
+          patientData = await patientService.getPatientById(patientId);
         }
+
+        if (!patientData) {
+          throw new Error('Paciente não encontrado.');
+        }
+
+        setPatient(patientData);
+        if (recordData) {
+          setInitialData(recordData);
+        } else {
+          setInitialData({ patientId });
+        }
+        
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
         setError('Erro ao carregar os dados. Tente novamente.');
@@ -43,13 +54,11 @@ const RecordFormPage = () => {
   }, [recordId, patientId]);
 
   const handleSave = () => {
-    // Redireciona para a página de visualização de prontuários do paciente
-    navigate(`/patients/${patientId}/medical-records`);
+    navigate(`/patients/${patientId}/medical-records`, { replace: true });
   };
 
   const handleCancel = () => {
-    // Retorna para a página de visualização de prontuários do paciente
-    navigate(`/patients/${patientId}/medical-records`);
+    navigate(`/patients/${patientId}/medical-records`, { replace: true });
   };
 
   if (loading) {
@@ -67,6 +76,8 @@ const RecordFormPage = () => {
       </div>
     );
   }
+  
+  const patientName = patient?.name || 'Paciente';
 
   return (
     <div className="min-h-screen bg-background-light font-sans">
@@ -79,6 +90,7 @@ const RecordFormPage = () => {
           <RecordForm
             patientId={patientId}
             recordId={recordId}
+            initialData={initialData}
             onSave={handleSave}
             onCancel={handleCancel}
           />
