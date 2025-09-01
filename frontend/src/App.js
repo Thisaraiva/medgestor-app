@@ -12,11 +12,12 @@ import UserManagement from './pages/UserManagement';
 import UserFormPage from './pages/UserFormPage';
 import PatientList from './pages/PatientList';
 import PatientFormPage from './pages/PatientFormPage';
-import AppointmentList from './pages/AppointmentList'; // Importa a nova página de lista de agendamentos
-import AppointmentFormPage from './pages/AppointmentFormPage'; // Importa a nova página de formulário de agendamentos
-import InsurancePlanListPage from './pages/InsurancePlanList'; // NOVO: Importa a lista de planos
-import InsurancePlanFormPage from './pages/InsurancePlanFormPage'; // NOVO: Importa o formulário de planos
-
+import AppointmentList from './pages/AppointmentList';
+import AppointmentFormPage from './pages/AppointmentFormPage';
+import InsurancePlanListPage from './pages/InsurancePlanList';
+import InsurancePlanFormPage from './pages/InsurancePlanFormPage';
+import RecordViewPage from './pages/RecordViewPage';
+import RecordFormPage from './pages/RecordFormPage';
 
 function App() {
   return (
@@ -36,7 +37,7 @@ function App() {
             <Route path="/users" element={<UserManagement />} />
             <Route path="/users/new" element={<UserFormPage />} />
             <Route path="/users/edit/:id" element={<UserFormPage />} />
-            <Route path="/register" element={<UserFormPage />} /> {/* Rota para registro de novo usuário */}
+            <Route path="/register" element={<UserFormPage />} />
           </Route>
 
           {/* Rotas de Gerenciamento de Pacientes (apenas para admin, doctor, secretary) */}
@@ -46,24 +47,29 @@ function App() {
             <Route path="/patients/edit/:id" element={<PatientFormPage />} />
           </Route>
 
-          {/* NOVO: Rotas de Gerenciamento de Agendamentos (apenas para admin, doctor, secretary) */}
+          {/* Rotas de Gerenciamento de Agendamentos (apenas para admin, doctor, secretary) */}
           <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
             <Route path="/appointments" element={<AppointmentList />} />
             <Route path="/appointments/new" element={<AppointmentFormPage />} />
             <Route path="/appointments/edit/:id" element={<AppointmentFormPage />} />
           </Route>
 
-          {/* NOVO: Rotas de Planos de Saúde (Admin e Secretário) */}
+          {/* Rotas de Planos de Saúde (Admin e Secretário) */}
           <Route element={<PrivateRoute roles={['admin', 'secretary']} />}>
             <Route path="/insurance-plans" element={<InsurancePlanListPage />} />
             <Route path="/insurance-plans/new" element={<InsurancePlanFormPage />} />
             <Route path="/insurance-plans/edit/:id" element={<InsurancePlanFormPage />} />
           </Route>
 
-          {/* Adicione uma rota para 404 Not Found se desejar */}
+          {/* Rotas de Prontuários */}
+          <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
+            <Route path="/patients/:patientId/medical-records" element={<RecordViewPage />} />
+            <Route path="/patients/:patientId/medical-records/new" element={<RecordFormPage />} /> 
+            <Route path="/patients/:patientId/medical-records/edit/:recordId" element={<RecordFormPage />} />
+          </Route>
+
           <Route path="*" element={<p className="text-center text-xl mt-20">404 - Page Not Found</p>} />
 
-          {/* Adicione outras rotas protegidas aqui conforme necessário */}
         </Routes>
       </AuthProvider>
     </Router>

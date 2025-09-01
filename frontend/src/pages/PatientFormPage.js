@@ -7,7 +7,7 @@ import PatientForm from '../components/PatientForm';
 import patientService from '../services/patientService';
 
 const PatientFormPage = () => {
-  const { id } = useParams(); // Obtém o ID do paciente da URL (se estiver em modo de edição)
+  const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +15,7 @@ const PatientFormPage = () => {
 
   useEffect(() => {
     const fetchPatient = async () => {
-      if (id) { // Se houver um ID na URL, estamos em modo de edição
+      if (id) {
         try {
           const fetchedPatient = await patientService.getPatientById(id);
           setPatient(fetchedPatient);
@@ -25,7 +25,7 @@ const PatientFormPage = () => {
         } finally {
           setLoading(false);
         }
-      } else { // Se não houver ID, estamos em modo de adição
+      } else {
         setLoading(false);
       }
     };
@@ -33,13 +33,9 @@ const PatientFormPage = () => {
   }, [id]);
 
   const handleFormSubmit = (message, isError) => {
-    // Após a submissão do formulário, exibe a mensagem e redireciona para a lista de pacientes
-    // Você pode querer exibir a mensagem de sucesso/erro de forma mais persistente aqui,
-    // ou passá-la para a PatientList através de um serviço de notificação global.
     console.log('Formulário de paciente submetido:', message, 'Erro:', isError);
-    // Redireciona para a lista de pacientes após um breve atraso
     setTimeout(() => {
-      navigate('/patients', { state: { message, isError } }); // Passa a mensagem via state
+      navigate('/patients', { state: { message, isError } });
     }, 1000);
   };
 
@@ -63,7 +59,7 @@ const PatientFormPage = () => {
     <div className="min-h-screen bg-background-light font-sans">
       <Navbar />
       <div className="container mx-auto p-6 flex justify-center">
-        <div className="w-full max-w-2xl"> {/* Ajuste a largura conforme necessário */}
+        <div className="w-full max-w-2xl">
           <PatientForm patient={patient} onSubmit={handleFormSubmit} />
         </div>
       </div>

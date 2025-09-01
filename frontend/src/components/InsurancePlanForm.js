@@ -3,13 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import insurancePlanService from '../services/insurancePlanService'; // Importa o serviço de planos de saúde
 
-/**
- * Componente de formulário para adicionar ou editar planos de saúde.
- *
- * @param {object} props - Propriedades do componente.
- * @param {object} [props.insurancePlan] - Objeto de plano de saúde para edição. Se nulo, é um formulário de adição.
- * @param {function} props.onSubmit - Função a ser chamada após o envio bem-sucedido.
- */
 const InsurancePlanForm = ({ insurancePlan, onSubmit }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

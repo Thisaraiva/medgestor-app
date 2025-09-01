@@ -1,3 +1,5 @@
+// Arquivo: C:\Programacao\Projetos\JavaScript\medgestor-app\backend\migrations\2025061005_create_medical_records.js
+
 'use strict';
 
 module.exports = {
@@ -19,16 +21,16 @@ module.exports = {
       },
       appointmentId: {
         type: Sequelize.UUID,
-        allowNull: true, // Pode ser nulo se o prontuário for criado fora de um agendamento
+        allowNull: true,
         references: {
           model: 'appointments',
           key: 'id',
         },
-        onDelete: 'SET NULL', // Se o agendamento for excluído, o prontuário permanece, mas o link é removido
+        onDelete: 'SET NULL',
       },
       diagnosis: {
         type: Sequelize.TEXT,
-        allowNull: true,
+        allowNull: false, // Diagnóstico agora é obrigatório
       },
       treatment: {
         type: Sequelize.TEXT,
@@ -45,10 +47,12 @@ module.exports = {
       },
       createdAt: {
         type: Sequelize.DATE,
+        allowNull: false,
         defaultValue: Sequelize.NOW,
       },
       updatedAt: {
         type: Sequelize.DATE,
+        allowNull: false,
         defaultValue: Sequelize.NOW,
       },
     });

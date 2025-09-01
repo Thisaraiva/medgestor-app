@@ -1,7 +1,7 @@
 // frontend/src/pages/PatientList.js
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom'; // Importa useNavigate e useLocation
+import { useNavigate, useLocation, Link } from 'react-router-dom'; // Importa Link e useLocation
 import Navbar from '../components/Navbar';
 import patientService from '../services/patientService';
 import { useAuth } from '../context/AuthContext';
@@ -45,8 +45,7 @@ const PatientList = () => {
       navigate(location.pathname, { replace: true, state: {} });
       setTimeout(() => setActionMessage(''), 3000);
     }
-  }, [location.state]); // Adicionado location.state como dependência para reagir a mensagens de navegação
-
+  }, [location.state, navigate]); // Adicionado navigate como dependência
 
   // Funções para CRUD
   const handleAddPatient = () => {
@@ -126,9 +125,6 @@ const PatientList = () => {
           </div>
         )}
 
-        {/* Removido Modal para Adicionar/Editar Paciente */}
-        {/* Removido PatientForm */}
-
         {/* Diálogo de Confirmação para Exclusão */}
         <ConfirmDialog
           show={showConfirmDialog}
@@ -185,6 +181,13 @@ const PatientList = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {canManagePatients && (
                         <>
+                          <Link
+                            to={`/patients/${patient.id}/medical-records`}
+                            className="text-primary-DEFAULT hover:text-primary-dark mr-4"
+                            title="Ver Prontuários"
+                          >
+                            Prontuários
+                          </Link>
                           <button
                             onClick={() => handleEditPatient(patient)}
                             className="text-primary-DEFAULT hover:text-primary-dark mr-4"

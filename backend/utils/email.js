@@ -1,9 +1,6 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config(); // Garante que as variáveis de ambiente sejam carregadas
 
-// Configuração do transporter do Nodemailer
-// As variáveis de ambiente EMAIL_HOST, EMAIL_PORT, EMAIL_SECURE, EMAIL_USER, EMAIL_PASS
-// devem estar definidas no seu arquivo .env do backend.
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT, 10), // Garante que a porta seja um número
@@ -17,15 +14,6 @@ const transporter = nodemailer.createTransport({
   // logger: process.env.NODE_ENV === 'development',
 });
 
-/**
- * Envia um e-mail de confirmação de agendamento.
- * @param {object} options - Opções para o e-mail.
- * @param {string} options.to - Endereço de e-mail do destinatário (paciente).
- * @param {string} options.patientName - Nome do paciente.
- * @param {string} options.doctorName - Nome do médico.
- * @param {string} options.date - Data e hora da consulta formatada (ex: "dd/MM/yyyy HH:mm").
- * @param {string} [options.insuranceInfo] - Informações do plano de saúde ou "Particular".
- */
 const sendAppointmentConfirmation = async ({ to, patientName, doctorName, date, insuranceInfo = 'Não informado' }) => {
   const mailOptions = {
     from: `"MedGestor" <${process.env.EMAIL_USER}>`,

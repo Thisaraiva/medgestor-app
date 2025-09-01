@@ -1,6 +1,8 @@
+// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\models\Appointment.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+// Definição do modelo Appointment
 const Appointment = sequelize.define('Appointment', {
   id: {
     type: DataTypes.UUID,
@@ -35,26 +37,24 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  // NOVO: Campo para o ID do plano de saúde, opcional (pode ser nulo se não usar convênio)
   insurancePlanId: {
     type: DataTypes.UUID,
-    allowNull: true, // Pode ser nulo se 'insurance' for false
+    allowNull: true,
     references: {
-      model: 'insurance_plans', // Referencia a nova tabela de planos de saúde
+      model: 'insurance_plans',
       key: 'id',
     },
-    onDelete: 'SET NULL', // Se um plano for excluído, o campo fica nulo, não exclui o agendamento
+    onDelete: 'SET NULL',
   },
 }, {
   timestamps: true,
   tableName: 'appointments',
 });
 
-// Adicionar a função associate
+// Adicionar a função associate para as associações
 Appointment.associate = (models) => {
   Appointment.belongsTo(models.User, { as: 'doctor', foreignKey: 'doctorId' });
   Appointment.belongsTo(models.Patient, { as: 'patient', foreignKey: 'patientId' });
-  // NOVO: Associação com o modelo InsurancePlan
   Appointment.belongsTo(models.InsurancePlan, { as: 'insurancePlan', foreignKey: 'insurancePlanId' });
 };
 

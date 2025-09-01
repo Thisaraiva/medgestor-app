@@ -3,13 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import patientService from '../services/patientService'; // Importa o serviço de paciente
 
-/**
- * Componente de formulário para adicionar ou editar pacientes.
- *
- * @param {object} props - Propriedades do componente.
- * @param {object} [props.patient] - Objeto paciente para edição. Se nulo, é um formulário de adição.
- * @param {function} props.onSubmit - Função a ser chamada após a submissão bem-sucedida.
- */
+
 const PatientForm = ({ patient, onSubmit }) => {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
@@ -40,11 +34,7 @@ const PatientForm = ({ patient, onSubmit }) => {
     setIsError(false);
   }, [patient]);
 
-  /**
-   * Formata o CPF para o padrão 000.000.000-00
-   * @param {string} value - O valor do CPF sem formatação.
-   * @returns {string} - O CPF formatado.
-   */
+ 
   const formatCpf = (value) => {
     // Remove tudo que não for dígito
     const numericValue = value.replace(/\D/g, '');

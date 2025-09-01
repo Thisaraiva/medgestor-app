@@ -3,13 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import authService from '../services/authService'; // Importa o serviço de autenticação
 
-/**
- * Componente de formulário para adicionar ou editar usuários.
- *
- * @param {object} props - Propriedades do componente.
- * @param {object} [props.user] - Objeto usuário para edição. Se nulo, é um formulário de adição.
- * @param {function} props.onSubmit - Função a ser chamada após a submissão bem-sucedida.
- */
 const UserForm = ({ user, onSubmit }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,11 +34,6 @@ const UserForm = ({ user, onSubmit }) => {
     setIsError(false);
   }, [user]);
 
-  /**
-   * Valida o formato do CRM no frontend
-   * @param {string} value - O valor do CRM.
-   * @returns {boolean} - True se válido, false se inválido.
-   */
   const isValidCrm = (value) => {
     if (!value) return false;
     return /^CRM\/[A-Z]{2}-\d{1,6}$/.test(value);

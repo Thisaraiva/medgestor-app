@@ -8,35 +8,28 @@ const Navbar = () => {
     const { isAuthenticated, logout, user } = useAuth(); // Obtém o usuário logado e seu papel
     const navigate = useNavigate();
 
-    /**
-     * Lida com a ação de logout.
-     * Chama a função de logout do contexto e redireciona para a página de login.
-     */
+   
     const handleLogout = () => {
         logout(); // Chama a função de logout do contexto
         navigate('/'); // Redireciona para a página de login
     };
 
-    // Verifica se o usuário tem permissão para gerenciar usuários (CRUD completo)
-    // Admin e Secretária podem gerenciar usuários.
+    
     const canManageUsers = isAuthenticated && user && (
       user.role === 'admin' || user.role === 'secretary'
     );
 
-    // Verifica se o usuário tem permissão para gerenciar pacientes
-    // Admin, Médico e Secretária podem gerenciar pacientes.
+    
     const canAccessPatients = isAuthenticated && user && (
       user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
     );
 
-    // Verifica se o usuário tem permissão para gerenciar agendamentos
-    // Admin, Médico e Secretária podem gerenciar agendamentos.
+    
     const canAccessAppointments = isAuthenticated && user && (
       user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
     );
 
-    // Verifica se o usuário tem permissão para gerenciar planos de saúde
-    // Admin e Secretária podem gerenciar planos de saúde.
+    
     const canManageInsurancePlans = isAuthenticated && user && (
         user.role === 'admin' || user.role === 'secretary'
     );
@@ -57,17 +50,17 @@ const Navbar = () => {
                             <Link to="/dashboard" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                 Dashboard
                             </Link>
-                            {canAccessPatients && ( // Link para Pacientes
+                            {/*canAccessPatients && ( // Link para Pacientes
                                 <Link to="/patients" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Pacientes
                                 </Link>
-                            )}
+                            )*/}
                             {canAccessAppointments && ( // Link para Agendamentos
                                 <Link to="/appointments" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Agendamentos
                                 </Link>
                             )}
-                            {canManageUsers && ( // Link para Gerenciar Usuários
+                            {/*canManageUsers && ( // Link para Gerenciar Usuários
                                 <Link to="/users" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Gerenciar Usuários
                                 </Link>
@@ -76,7 +69,7 @@ const Navbar = () => {
                                 <Link to="/insurance-plans" className="text-white hover:text-secondary-light px-3 py-2 rounded-md text-sm font-medium transition duration-200">
                                     Planos de Saúde
                                 </Link>
-                            )}
+                            )*/}
                             {/* A opção de "Registrar Usuário" foi removida daqui, pois o gerenciamento é feito em /users */}
                             
                             {/* Exibe o nome e papel do usuário logado */}

@@ -4,15 +4,6 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Importa o hook de autenticação
 
-/**
- * Componente PrivateRoute para proteger rotas.
- * Redireciona usuários não autenticados para a página de login.
- * Opcionalmente, restringe o acesso a usuários com papéis específicos.
- *
- * @param {object} props - Propriedades do componente.
- * @param {Array<string>} [props.roles] - Array de papéis permitidos (ex: ['admin', 'doctor']).
- * Se não for fornecido, apenas verifica a autenticação.
- */
 const PrivateRoute = ({ roles }) => {
   const { isAuthenticated, user } = useAuth(); // Obtém o estado de autenticação e dados do usuário
 

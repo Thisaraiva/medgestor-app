@@ -1,9 +1,8 @@
+// Arquivo C:\Programacao\Projetos\JavaScript\medgestor-app\backend\migrations\2025061004_create_appointments.js
 'use strict';
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Cria a tabela 'appointments' já com a coluna 'insurancePlanId'
-    // A tabela 'insurance_plans' é esperada que já exista (criada por 2025061003_create_insurance_plans.js)
     await queryInterface.createTable('appointments', {
       id: {
         type: Sequelize.UUID,
@@ -40,14 +39,14 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
-      insurancePlanId: { // NEW: Column for the insurance plan ID
+      insurancePlanId: {
         type: Sequelize.UUID,
-        allowNull: true, // Can be null if 'insurance' is false (private appointment)
+        allowNull: true,
         references: {
-          model: 'insurance_plans', // References the insurance plans table
+          model: 'insurance_plans',
           key: 'id',
         },
-        onDelete: 'SET NULL', // If an insurance plan is deleted, the field becomes null, it doesn't delete the appointment
+        onDelete: 'SET NULL',
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -61,7 +60,6 @@ module.exports = {
   },
 
   down: async (queryInterface) => {
-    // Drops the 'appointments' table
     await queryInterface.dropTable('appointments');
   },
 };

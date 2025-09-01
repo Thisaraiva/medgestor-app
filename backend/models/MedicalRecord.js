@@ -1,3 +1,5 @@
+// Arquivo: C:\Programacao\Projetos\JavaScript\medgestor-app\backend\models\MedicalRecord.js
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -17,16 +19,16 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
   },
   appointmentId: {
     type: DataTypes.UUID,
-    allowNull: true, // Pode ser nulo se o prontuário for criado fora de um agendamento
+    allowNull: true,
     references: {
       model: 'appointments',
       key: 'id',
     },
-    onDelete: 'SET NULL', // Se o agendamento for excluído, o prontuário permanece, mas o link é removido
+    onDelete: 'SET NULL',
   },
   diagnosis: {
     type: DataTypes.TEXT,
-    allowNull: true,
+    allowNull: false, // Diagnóstico agora é obrigatório
   },
   treatment: {
     type: DataTypes.TEXT,
@@ -36,20 +38,20 @@ const MedicalRecord = sequelize.define('MedicalRecord', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  date: { // Adicionado o campo 'date'
+  date: {
     type: DataTypes.DATE,
-    allowNull: false, // Tornando-o obrigatório
-    defaultValue: DataTypes.NOW, // Valor padrão para a data atual
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
   },
 }, {
   timestamps: true,
   tableName: 'medical_records',
 });
 
-// Adicionar a função associate
+// Define as associações do modelo
 MedicalRecord.associate = (models) => {
   MedicalRecord.belongsTo(models.Patient, { foreignKey: 'patientId' });
-  MedicalRecord.belongsTo(models.Appointment, { foreignKey: 'appointmentId' }); // NOVA ASSOCIAÇÃO
+  MedicalRecord.belongsTo(models.Appointment, { foreignKey: 'appointmentId' });
 };
 
 module.exports = MedicalRecord;

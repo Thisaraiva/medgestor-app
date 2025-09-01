@@ -6,7 +6,7 @@ import appointmentService from '../services/appointmentService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ConfirmDialog from '../components/ConfirmDialog';
-import moment from 'moment'; // NOVO: Importa Moment.js
+import moment from 'moment';
 
 const AppointmentList = () => {
   const [appointments, setAppointments] = useState([]);
@@ -20,19 +20,15 @@ const AppointmentList = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Function to fetch all appointments
   const fetchAppointments = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await appointmentService.getAllAppointments();
-      // A resposta do backend agora já vem com 'date' formatado e 'dateOnly', 'timeOnly'
       setAppointments(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      console.error('Error fetching appointments:', err);
-      // O erro 'utcToZonedTime is not a function' ainda pode aparecer aqui se o backend não foi atualizado
-      // ou reconstruído corretamente. A mensagem de erro deve ser mais específica após as correções.
-      setError(err.response?.data?.error?.message || 'Error loading appointments. Check your permissions or try again.');
+      console.error('Erro ao buscar agendamentos:', err);
+      setError(err.response?.data?.error?.message || 'Erro ao carregar agendamentos. Verifique suas permissões ou tente novamente.');
       setAppointments([]);
     } finally {
       setLoading(false);
@@ -40,22 +36,20 @@ const AppointmentList = () => {
   };
 
   useEffect(() => {
-    // Only 'admin', 'doctor', and 'secretary' can access this page
     if (currentUser?.role && ['admin', 'doctor', 'secretary'].includes(currentUser.role)) {
       fetchAppointments();
     } else {
-      setError('You do not have permission to access this page.');
+      setError('Você não tem permissão para acessar esta página.');
       setLoading(false);
     }
 
-    // Handles messages passed via navigation state
     if (location.state && location.state.message) {
       setActionMessage(location.state.message);
       setIsActionError(location.state.isError || false);
-      navigate(location.pathname, { replace: true, state: {} }); // Clears the message from state
+      navigate(location.pathname, { replace: true, state: {} });
       setTimeout(() => setActionMessage(''), 3000);
     }
-  }, [currentUser, location.state, navigate]); // Added 'navigate' to dependencies
+  }, [currentUser, location.state, navigate]);
 
   const handleAddAppointment = () => {
     navigate('/appointments/new');
@@ -75,12 +69,12 @@ const AppointmentList = () => {
     if (appointmentToDelete) {
       try {
         await appointmentService.deleteAppointment(appointmentToDelete);
-        setActionMessage('Appointment deleted successfully!');
+        setActionMessage('Agendamento excluído com sucesso!');
         setIsActionError(false);
-        fetchAppointments(); // Reload the list
+        fetchAppointments();
       } catch (err) {
-        console.error('Error deleting appointment:', err);
-        const errorMessage = err.response?.data?.error?.message || 'Error deleting appointment. Check your permissions.';
+        console.error('Erro ao excluir agendamento:', err);
+        const errorMessage = err.response?.data?.error?.message || 'Erro ao excluir agendamento. Verifique suas permissões.';
         setActionMessage(errorMessage);
         setIsActionError(true);
       } finally {
@@ -90,10 +84,17 @@ const AppointmentList = () => {
     }
   };
 
+  const formatDateTime = (isoString) => {
+    if (!isoString) return 'N/A';
+    // O backend já deve retornar a data formatada, mas se for ISO, formata aqui
+    const date = moment(isoString);
+    return date.isValid() ? date.format('DD/MM/YYYY HH:mm') : isoString;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background-light font-sans flex items-center justify-center">
-        <p className="text-text-DEFAULT text-lg">Loading appointments...</p>
+        <p className="text-text-DEFAULT text-lg">Carregando agendamentos...</p>
       </div>
     );
   }
@@ -111,13 +112,13 @@ const AppointmentList = () => {
       <Navbar />
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-primary-dark">Appointment Management</h1>
+          <h1 className="text-4xl font-bold text-primary-dark">Gerenciamento de Agendamentos</h1>
           {currentUser?.role && ['admin', 'doctor', 'secretary'].includes(currentUser.role) && (
             <button
               onClick={handleAddAppointment}
               className="bg-primary-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-DEFAULT transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
             >
-              New Appointment
+              Novo Agendamento
             </button>
           )}
         </div>
@@ -129,32 +130,32 @@ const AppointmentList = () => {
         )}
 
         {appointments.length === 0 ? (
-          <p className="text-center text-text-light text-lg mt-10">No appointments registered yet.</p>
+          <p className="text-center text-text-light text-lg mt-10">Nenhum agendamento cadastrado ainda.</p>
         ) : (
           <div className="overflow-x-auto bg-background-DEFAULT rounded-xl shadow-custom-medium">
             <table className="min-w-full divide-y divide-secondary-dark">
               <thead className="bg-secondary-light">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Doctor
+                    Médico
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Patient
+                    Paciente
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Date and Time
+                    Data e Hora
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Type
+                    Tipo
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Insurance
+                    Convênio
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Plan
+                    Plano
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Actions
+                    Ações
                   </th>
                 </tr>
               </thead>
@@ -168,14 +169,13 @@ const AppointmentList = () => {
                       {appt.patient ? appt.patient.name : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
-                      {/* appt.date já vem formatado do backend (dd/MM/yyyy HH:mm) */}
-                      {appt.date} 
+                      {formatDateTime(appt.date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light capitalize">
-                      {appt.type === 'initial' ? 'Initial' : 'Return'}
+                      {appt.type === 'initial' ? 'Inicial' : 'Retorno'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
-                      {appt.insurance ? 'Yes' : 'No'}
+                      {appt.insurance ? 'Sim' : 'Não'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
                       {appt.insurance && appt.insurancePlan ? appt.insurancePlan.name : 'N/A'}
@@ -185,13 +185,13 @@ const AppointmentList = () => {
                         onClick={() => handleEditAppointment(appt.id)}
                         className="text-primary-DEFAULT hover:text-primary-dark mr-4"
                       >
-                        Edit
+                        Editar
                       </button>
                       <button
                         onClick={() => confirmDeleteAppointment(appt.id)}
                         className="text-error hover:text-red-700"
                       >
-                        Delete
+                        Excluir
                       </button>
                     </td>
                   </tr>
@@ -205,7 +205,7 @@ const AppointmentList = () => {
         show={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}
         onConfirm={handleDeleteConfirmed}
-        message="Are you sure you want to delete this appointment?"
+        message="Tem certeza que deseja excluir este agendamento?"
       />
     </div>
   );

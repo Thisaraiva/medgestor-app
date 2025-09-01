@@ -3,14 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-/**
- * Componente de Modal genérico.
- *
- * @param {object} props - Propriedades do componente.
- * @param {boolean} props.show - Controla a visibilidade do modal.
- * @param {function} props.onClose - Função chamada ao fechar o modal.
- * @param {React.ReactNode} props.children - Conteúdo a ser exibido dentro do modal.
- */
+
 const Modal = ({ show, onClose, children }) => {
   if (!show) {
     return null;
