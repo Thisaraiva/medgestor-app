@@ -1,4 +1,5 @@
 // Arquivo C:\Programacao\Projetos\JavaScript\medgestor-app\backend\controllers\appointmentController.js
+
 const asyncHandler = require('../middleware/controllerMiddleware');
 const appointmentService = require('../services/appointmentService');
 const { ValidationError } = require('../errors/errors');
@@ -97,7 +98,8 @@ const getAppointments = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
-  const appointments = await appointmentService.getAppointments(value);
+  // Passa o usuário logado para a função de serviço
+  const appointments = await appointmentService.getAppointments(value, req.user);
   res.status(200).json(appointments);
 });
 

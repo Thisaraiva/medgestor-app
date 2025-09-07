@@ -2,16 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import appointmentService from '../services/appointmentService';
-import authService from '../services/authService';
-import patientService from '../services/patientService';
-import insurancePlanService from '../services/insurancePlanService';
-import moment from 'moment';
+import authService from '../services/authService'; // To fetch doctors
+import patientService from '../services/patientService'; // To fetch patients
+import insurancePlanService from '../services/insurancePlanService'; // NEW: To fetch insurance plans
+import moment from 'moment'; // Importa Moment.js
 
+/**
+ * Form component for adding or editing appointments.
+ *
+ * @param {object} props - Component properties.
+ * @param {object} [props.appointment] - Appointment object for editing. If null, it's an add form.
+ * @param {function} props.onSubmit - Function to be called after successful submission.
+ */
 const AppointmentForm = ({ appointment, onSubmit }) => {
   const [doctorId, setDoctorId] = useState('');
   const [patientId, setPatientId] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const [selectedDate, setSelectedDate] = useState(''); // State for date input (YYYY-MM-DD)
+  const [selectedTime, setSelectedTime] = useState(''); // State for time input (HH:mm)
   const [type, setType] = useState('initial');
   const [insurance, setInsurance] = useState(false);
   const [insurancePlanId, setInsurancePlanId] = useState('');
@@ -23,7 +30,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [formLoading, setFormLoading] = useState(true);
 
-  // Efeito para buscar dados para os dropdowns
+  // Effect to fetch dropdown data (doctors, patients, insurance plans)
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
@@ -35,9 +42,10 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
         const insurancePlansResponse = await insurancePlanService.getAllActiveInsurancePlans();
         setInsurancePlans(insurancePlansResponse.data);
+
       } catch (err) {
-        console.error('Erro ao carregar dados para os dropdowns:', err);
-        setMessage('Erro ao carregar médicos, pacientes ou planos de saúde.');
+        console.error('Error loading data for dropdowns:', err);
+        setMessage('Error loading doctors, patients, or insurance plans.');
         setIsError(true);
       } finally {
         setFormLoading(false);
@@ -46,7 +54,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     fetchDropdownData();
   }, []);
 
-  // Preenche o formulário se um agendamento for passado para edição
+  // Populates the form if an appointment is passed for editing
   useEffect(() => {
     if (appointment) {
       setDoctorId(appointment.doctorId || '');
@@ -55,18 +63,21 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       setInsurance(appointment.insurance || false);
       setInsurancePlanId(appointment.insurancePlanId || '');
 
+      // Populate date and time fields separately from backend's formatted date
       if (appointment.dateOnly && appointment.timeOnly) {
-        setSelectedDate(appointment.dateOnly);
-        setSelectedTime(appointment.timeOnly);
+        setSelectedDate(appointment.dateOnly); // YYYY-MM-DD
+        setSelectedTime(appointment.timeOnly); // HH:mm
       } else if (appointment.date) {
-        const parsed = moment(appointment.date, 'DD/MM/YYYY HH:mm');
-        if (parsed.isValid()) {
-          setSelectedDate(parsed.format('YYYY-MM-DD'));
-          setSelectedTime(parsed.format('HH:mm'));
+        // Fallback if dateOnly/timeOnly are not provided by backend (older data)
+        // This assumes appointment.date is in 'DD/MM/YYYY HH:mm' format from backend
+        const parsed = moment(appointment.date, 'DD/MM/YYYY HH:mm'); // Usando moment para parsear
+        if (parsed.isValid()) { // Usando isValid() do moment
+          setSelectedDate(parsed.format('YYYY-MM-DD')); // Usando format() do moment
+          setSelectedTime(parsed.format('HH:mm')); // Usando format() do moment
         }
       }
     } else {
-      // Limpa o formulário para uma nova criação
+      // Clears the form if no appointment for editing
       setDoctorId('');
       setPatientId('');
       setSelectedDate('');
@@ -75,7 +86,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       setInsurance(false);
       setInsurancePlanId('');
     }
-    setMessage('');
+    setMessage(''); // Clears messages when changing appointment/mode
     setIsError(false);
   }, [appointment]);
 
@@ -85,31 +96,35 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     setIsError(false);
     setLoading(true);
 
+    // Combine selected date and time into an ISO 8601 string for the backend
     let combinedDateTime = null;
     if (selectedDate && selectedTime) {
       try {
-        const localMoment = moment(`${selectedDate}T${selectedTime}`);
-        if (!localMoment.isValid()) {
-          throw new Error('Data ou hora selecionada inválida.');
+        // Cria um objeto Moment no fuso horário local e depois converte para ISO 8601 (UTC)
+        const localMoment = moment(`${selectedDate}T${selectedTime}`); // Cria Moment no fuso horário local
+        
+        if (!localMoment.isValid()) { // Usando isValid() do moment
+          throw new Error('Invalid date or time selected.');
         }
-        combinedDateTime = localMoment.toISOString();
+
+        combinedDateTime = localMoment.toISOString(); // Converte para ISO 8601 (UTC)
       } catch (error) {
         setMessage(`Erro ao combinar data e hora: ${error.message}`);
         setIsError(true);
         setLoading(false);
-        return;
+        return; // Stop submission
       }
     } else {
       setMessage('Data e hora são obrigatórias.');
       setIsError(true);
       setLoading(false);
-      return;
+      return; // Stop submission
     }
 
     const appointmentData = {
       doctorId,
       patientId,
-      date: combinedDateTime,
+      date: combinedDateTime, // Send as ISO 8601 string
       type,
       insurance,
       insurancePlanId: insurance ? insurancePlanId : null,
@@ -118,12 +133,13 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     try {
       if (appointment) {
         await appointmentService.updateAppointment(appointment.id, appointmentData);
-        setMessage('Agendamento atualizado com sucesso!');
-        onSubmit('Agendamento atualizado com sucesso!', false);
+        setMessage('Appointment updated successfully!');
+        onSubmit('Appointment updated successfully!', false);
       } else {
         await appointmentService.createAppointment(appointmentData);
-        setMessage('Agendamento criado com sucesso!');
-        onSubmit('Agendamento criado com sucesso!', false);
+        setMessage('Appointment created successfully!');
+        onSubmit('Appointment created successfully!', false);
+        // Clears the form after creation
         setDoctorId('');
         setPatientId('');
         setSelectedDate('');
@@ -134,8 +150,8 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       }
       setIsError(false);
     } catch (err) {
-      console.error('Erro ao salvar agendamento:', err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erro ao salvar agendamento. Por favor, tente novamente.';
+      console.error('Error saving appointment:', err);
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Error saving appointment. Please try again.';
       setMessage(errorMessage);
       setIsError(true);
       onSubmit(errorMessage, true);
@@ -147,7 +163,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   if (formLoading) {
     return (
       <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium text-center text-text-DEFAULT">
-        Carregando dados do formulário...
+        Loading form data...
       </div>
     );
   }
@@ -155,7 +171,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   return (
     <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium">
       <h2 className="text-2xl font-bold text-primary-dark mb-6 text-center">
-        {appointment ? 'Editar Agendamento' : 'Novo Agendamento'}
+        {appointment ? 'Edit Appointment' : 'New Appointment'}
       </h2>
 
       {message && (
@@ -167,7 +183,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="doctorId">
-            Médico
+            Doctor
           </label>
           <select
             id="doctorId"
@@ -176,7 +192,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
             className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
             required
           >
-            <option value="">Selecione um médico</option>
+            <option value="">Select a doctor</option>
             {doctors.map((doc) => (
               <option key={doc.id} value={doc.id}>
                 {doc.name}
@@ -187,7 +203,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientId">
-            Paciente
+            Patient
           </label>
           <select
             id="patientId"
@@ -196,7 +212,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
             className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
             required
           >
-            <option value="">Selecione um paciente</option>
+            <option value="">Select a patient</option>
             {patients.map((pat) => (
               <option key={pat.id} value={pat.id}>
                 {pat.name}
@@ -205,10 +221,11 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
           </select>
         </div>
 
+        {/* Separated Date and Time Inputs */}
         <div className="mb-4 flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentDate">
-              Data
+              Date
             </label>
             <input
               type="date"
@@ -221,7 +238,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
           </div>
           <div className="flex-1">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentTime">
-              Hora
+              Time
             </label>
             <input
               type="time"
@@ -236,7 +253,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentType">
-            Tipo de Agendamento
+            Appointment Type
           </label>
           <select
             id="appointmentType"
@@ -245,8 +262,8 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
             className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
             required
           >
-            <option value="initial">Inicial</option>
-            <option value="return">Retorno</option>
+            <option value="initial">Initial</option>
+            <option value="return">Return</option>
           </select>
         </div>
 
@@ -257,21 +274,21 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
             checked={insurance}
             onChange={(e) => {
               setInsurance(e.target.checked);
-              if (!e.target.checked) {
+              if (!e.target.checked) { // If unchecking insurance, clear plan selection
                 setInsurancePlanId('');
               }
             }}
             className="mr-2 h-4 w-4 text-primary-DEFAULT rounded border-gray-300 focus:ring-primary-light"
           />
           <label className="text-text-light text-sm font-semibold" htmlFor="appointmentInsurance">
-            Com Convênio
+            Insurance
           </label>
         </div>
 
         {insurance && (
           <div className="mb-4">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="insurancePlanId">
-              Plano de Saúde
+              Insurance Plan
             </label>
             <select
               id="insurancePlanId"
@@ -280,7 +297,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
               className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
               required={insurance}
             >
-              <option value="">Selecione um plano</option>
+              <option value="">Select a plan</option>
               {insurancePlans.map((plan) => (
                 <option key={plan.id} value={plan.id}>
                   {plan.name}
@@ -295,7 +312,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
           className="w-full bg-primary-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
           disabled={loading}
         >
-          {loading ? 'Salvando...' : (appointment ? 'Salvar Alterações' : 'Agendar Consulta')}
+          {loading ? 'Saving...' : (appointment ? 'Save Changes' : 'Schedule Appointment')}
         </button>
       </form>
     </div>

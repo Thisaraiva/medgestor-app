@@ -1,4 +1,5 @@
 // Arquivo C:\Programacao\Projetos\JavaScript\medgestor-app\backend\services\appointmentService.js
+
 const { Appointment, User, Patient, InsurancePlan } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
 const { sendAppointmentConfirmation } = require('../utils/email');
@@ -110,20 +111,29 @@ const createAppointment = async (data) => {
     date: formatUtcDateToLocalString(createdAppointmentWithDetails.date),
     dateOnly: formatUtcDateToLocalDateInput(createdAppointmentWithDetails.date),
     timeOnly: formatUtcDateToLocalTimeInput(createdAppointmentWithDetails.date),
-    doctor: { id: createdAppointmentWithDetails.doctor.id, name: createdAppointmentWithDetails.doctor.name },
-    patient: { id: createdAppointmentWithDetails.patient.id, name: createdAppointmentWithDetails.patient.name },
+    doctor: createdAppointmentWithDetails.doctor ? { id: createdAppointmentWithDetails.doctor.id, name: createdAppointmentWithDetails.doctor.name } : null,
+    patient: createdAppointmentWithDetails.patient ? { id: createdAppointmentWithDetails.patient.id, name: createdAppointmentWithDetails.patient.name } : null,
     insurancePlan: createdAppointmentWithDetails.insurancePlan ? { id: createdAppointmentWithDetails.insurancePlan.id, name: createdAppointmentWithDetails.insurancePlan.name } : null,
   };
 };
 
-const getAppointments = async (filters) => {
+const getAppointments = async (filters, currentUser) => {
   const where = {};
   if (filters.type) {
     where.type = filters.type;
   }
-  if (filters.doctorId) {
-    where.doctorId = filters.doctorId;
+
+  // Lógica de filtragem baseada no perfil do usuário
+  if (currentUser.role === 'doctor') {
+    // Se o usuário é um médico, filtra apenas por seus próprios agendamentos
+    where.doctorId = currentUser.id;
+  } else {
+    // Para admin e secretária, permite filtrar por doctorId se o parâmetro estiver presente
+    if (filters.doctorId) {
+      where.doctorId = filters.doctorId;
+    }
   }
+
   if (filters.patientId) {
     where.patientId = filters.patientId;
   }
@@ -166,6 +176,8 @@ const getAppointments = async (filters) => {
     date: formatUtcDateToLocalString(appointment.date),
     dateOnly: formatUtcDateToLocalDateInput(appointment.date),
     timeOnly: formatUtcDateToLocalTimeInput(appointment.date),
+    doctor: appointment.doctor ? { id: appointment.doctor.id, name: appointment.doctor.name } : null,
+    patient: appointment.patient ? { id: appointment.patient.id, name: appointment.patient.name } : null,
     insurancePlan: appointment.insurancePlan ? { id: appointment.insurancePlan.id, name: appointment.insurancePlan.name } : null,
   }));
 };
@@ -188,6 +200,8 @@ const getAppointmentById = async (id) => {
     date: formatUtcDateToLocalString(appointment.date),
     dateOnly: formatUtcDateToLocalDateInput(appointment.date),
     timeOnly: formatUtcDateToLocalTimeInput(appointment.date),
+    doctor: appointment.doctor ? { id: appointment.doctor.id, name: appointment.doctor.name } : null,
+    patient: appointment.patient ? { id: appointment.patient.id, name: appointment.patient.name } : null,
     insurancePlan: appointment.insurancePlan ? { id: appointment.insurancePlan.id, name: appointment.insurancePlan.name } : null,
   };
 };
@@ -273,6 +287,8 @@ const updateAppointment = async (id, data) => {
     date: formatUtcDateToLocalString(updatedAppointment.date),
     dateOnly: formatUtcDateToLocalDateInput(updatedAppointment.date),
     timeOnly: formatUtcDateToLocalTimeInput(updatedAppointment.date),
+    doctor: updatedAppointment.doctor ? { id: updatedAppointment.doctor.id, name: updatedAppointment.doctor.name } : null,
+    patient: updatedAppointment.patient ? { id: updatedAppointment.patient.id, name: updatedAppointment.patient.name } : null,
     insurancePlan: updatedAppointment.insurancePlan ? { id: updatedAppointment.insurancePlan.id, name: updatedAppointment.insurancePlan.name } : null,
   };
 };

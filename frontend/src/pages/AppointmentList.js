@@ -24,7 +24,11 @@ const AppointmentList = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await appointmentService.getAllAppointments();
+      let filters = {};
+      if (currentUser?.role === 'doctor') {
+        filters.doctorId = currentUser.id;
+      }
+      const response = await appointmentService.getAllAppointments(filters);
       setAppointments(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error('Erro ao buscar agendamentos:', err);
@@ -84,11 +88,9 @@ const AppointmentList = () => {
     }
   };
 
-  const formatDateTime = (isoString) => {
-    if (!isoString) return 'N/A';
-    // O backend já deve retornar a data formatada, mas se for ISO, formata aqui
-    const date = moment(isoString);
-    return date.isValid() ? date.format('DD/MM/YYYY HH:mm') : isoString;
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    return dateString;
   };
 
   if (loading) {
