@@ -1,6 +1,8 @@
-import api from './api'; // Importa a instância única da API
+// C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\services\patientService.js
 
-const API_URL = '/api/patients';
+import api from './api';
+
+const API_URL = '/patients';
 
 const createPatient = async (patientData) => {
   try {

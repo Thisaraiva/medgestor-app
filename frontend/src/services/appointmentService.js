@@ -1,26 +1,26 @@
-import api from './api'; // Importa a instância única da API
+// C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\services\appointmentService.js
 
-const APPOINTMENTS_API_URL = '/api/appointments';
+import api from './api';
 
 const appointmentService = {
   createAppointment: (appointmentData) => {
-    return api.post(APPOINTMENTS_API_URL, appointmentData);
+    return api.post('/appointments', appointmentData);
   },
 
   getAllAppointments: (filters = {}) => {
-    return api.get(APPOINTMENTS_API_URL, { params: filters });
+    return api.get('/appointments', { params: filters });
   },
 
   getAppointmentById: (appointmentId) => {
-    return api.get(`${APPOINTMENTS_API_URL}/${appointmentId}`);
+    return api.get(`/appointments/${appointmentId}`);
   },
 
   updateAppointment: (appointmentId, appointmentData) => {
-    return api.put(`${APPOINTMENTS_API_URL}/${appointmentId}`, appointmentData);
+    return api.put(`/appointments/${appointmentId}`, appointmentData);
   },
 
   deleteAppointment: (appointmentId) => {
-    return api.delete(`${APPOINTMENTS_API_URL}/${appointmentId}`);
+    return api.delete(`/appointments/${appointmentId}`);
   },
 };
 

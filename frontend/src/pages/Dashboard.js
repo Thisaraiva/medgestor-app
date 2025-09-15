@@ -2,18 +2,18 @@
 
 import React from 'react';
 import Navbar from '../components/Navbar';
-import { useAuth } from '../context/AuthContext'; // Importa o hook de autenticação
-import { Link } from 'react-router-dom'; // Importa Link para navegação
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user } = useAuth(); // Obtém os dados do usuário logado
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background-light font-sans">
-      <Navbar /> {/* Inclui a barra de navegação */}
+      <Navbar />
       <div className="container mx-auto p-6">
         <h1 className="text-4xl font-bold text-primary-dark mb-8 text-center">
-          Bem-vindo ao MedGestor, {user ? user.name : 'Usuário'}! {/* Exibe o nome do usuário */}
+          Bem-vindo ao MedGestor, {user ? user.name : 'Usuário'}!
         </h1>
 
         {/* Conteúdo Dinâmico Baseado no Perfil do Usuário */}
@@ -36,7 +36,6 @@ const Dashboard = () => {
                 <h3 className="font-bold text-lg text-primary-dark">Gerenciar Pacientes</h3>
                 <p className="text-sm text-text-light">Cadastre e atualize informações de pacientes.</p>
               </Link>
-              {/* NOVO: Cartão para Gerenciar Planos de Saúde para Admin */}
               <Link to="/insurance-plans" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Gerenciar Planos de Saúde</h3>
                 <p className="text-sm text-text-light">Cadastre e atualize informações de planos de saúde.</p>
@@ -51,7 +50,7 @@ const Dashboard = () => {
 
         {user && user.role === 'doctor' && (
           <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-light mb-6">
-            <h2 className="text-2xl font-semibold text-text-DEFAULT mb-4">Minha Agenda (Médico)</h2>
+            <h2 className="text-2xl font-semibold text-text-DEFAULT mb-4">Painel do Médico</h2>
             <p className="text-text-light">
               Visualize suas próximas consultas, acesse prontuários e emita receitas.
             </p>
@@ -64,10 +63,10 @@ const Dashboard = () => {
                 <h3 className="font-bold text-lg text-primary-dark">Meus Pacientes</h3>
                 <p className="text-sm text-text-light">Acesse o cadastro e prontuários dos seus pacientes.</p>
               </Link>
-              <div className="bg-secondary-dark p-4 rounded-lg shadow-sm">
+              <Link to="/patients" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Emitir Receitas</h3>
-                <p className="text-sm text-text-light">Gere e imprima receitas médicas.</p>
-              </div>
+                <p className="text-sm text-text-light">Gere e imprima receitas médicas para seus pacientes.</p>
+              </Link>
             </div>
           </div>
         )}
@@ -91,7 +90,6 @@ const Dashboard = () => {
                 <h3 className="font-bold text-lg text-primary-dark">Consultar Agenda</h3>
                 <p className="text-sm text-text-light">Visualize a agenda de todos os médicos.</p>
               </Link>
-              {/* NOVO: Cartão para Gerenciar Planos de Saúde para Secretária */}
               <Link to="/insurance-plans" className="bg-secondary-dark p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200 block">
                 <h3 className="font-bold text-lg text-primary-dark">Gerenciar Planos de Saúde</h3>
                 <p className="text-sm text-text-light">Cadastre e atualize informações de planos de saúde.</p>
@@ -100,7 +98,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Se não houver usuário ou papel, um fallback */}
         {!user && (
           <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-light text-center">
             <p className="text-text-light">Carregando informações do usuário...</p>

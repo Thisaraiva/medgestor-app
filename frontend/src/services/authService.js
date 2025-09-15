@@ -1,37 +1,38 @@
-import axios from 'axios';
-import api from './api'; // Importa a instância única da API
+// C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\services\authService.js
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const AUTH_API_URL = `${API_BASE_URL}/api/auth`;
-const USERS_API_URL = `${API_BASE_URL}/api/users`;
+import api from './api'; // Usar a instância única da API
 
 const authService = {
   login: (email, password) => {
-    return axios.post(`${AUTH_API_URL}/login`, { email, password });
+    // Usar a instância 'api' para o login também
+    // O interceptor do `api` não injeta token para login, pois ainda não existe, então está correto usar ele
+    return api.post('/auth/login', { email, password });
   },
 
   register: (userData) => {
-    return api.post(`${AUTH_API_URL}/register`, userData);
+    return api.post('/auth/register', userData);
   },
 
   getAllUsers: () => {
-    return api.get(USERS_API_URL);
+    // Note que a rota para usuários é '/api/users' no backend
+    // Como api.js já tem '/api', a chamada é apenas '/users'
+    return api.get('/users');
   },
 
   getUserById: (userId) => {
-    return api.get(`${USERS_API_URL}/${userId}`);
+    return api.get(`/users/${userId}`);
   },
 
   updateUser: (userId, userData) => {
-    return api.put(`${USERS_API_URL}/${userId}`, userData);
+    return api.put(`/users/${userId}`, userData);
   },
 
   deleteUser: (userId) => {
-    return api.delete(`${USERS_API_URL}/${userId}`);
+    return api.delete(`/users/${userId}`);
   },
 
   updateMyProfile: (userId, userData) => {
-    return api.put(`${USERS_API_URL}/profile/${userId}`, userData);
+    return api.put(`/users/profile/${userId}`, userData);
   },
 };
 

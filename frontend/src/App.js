@@ -18,6 +18,9 @@ import InsurancePlanListPage from './pages/InsurancePlanList';
 import InsurancePlanFormPage from './pages/InsurancePlanFormPage';
 import RecordViewPage from './pages/RecordViewPage';
 import RecordFormPage from './pages/RecordFormPage';
+import PrescriptionListPage from './pages/PrescriptionListPage';
+import PrescriptionFormPage from './pages/PrescriptionFormPage';
+import PrescriptionPrint from './components/PrescriptionPrint';
 
 function App() {
   return (
@@ -68,6 +71,16 @@ function App() {
             <Route path="/patients/:patientId/medical-records/edit/:recordId" element={<RecordFormPage />} />
           </Route>
 
+          {/* Rotas de Prescrições (apenas para doctor, admin) */}
+          <Route element={<PrivateRoute roles={['admin', 'doctor']} />}>
+            <Route path="/patients/:patientId/prescriptions" element={<PrescriptionListPage />} />
+            <Route path="/patients/:patientId/prescriptions/new" element={<PrescriptionFormPage />} />
+            <Route path="/patients/:patientId/prescriptions/edit/:prescriptionId" element={<PrescriptionFormPage />} />
+          </Route>
+
+           {/* Rota de Impressão (Não tem layout de navegação) */}
+          <Route path="/prescriptions/print/:prescriptionId" element={<PrescriptionPrint />} />
+          
           <Route path="*" element={<p className="text-center text-xl mt-20">404 - Page Not Found</p>} />
 
         </Routes>

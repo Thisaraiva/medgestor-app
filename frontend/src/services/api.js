@@ -1,9 +1,10 @@
-// frontend/src/services/api.js
+// C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\services\api.js
 
 import axios from 'axios';
 
-// Define a URL base da API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Define a URL base da API com o prefixo /api
+// Isso centraliza a configuração e evita repetição (DRY)
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Cria a instância única do Axios
 const api = axios.create({

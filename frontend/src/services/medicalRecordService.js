@@ -1,51 +1,51 @@
-// frontend/src/services/medicalRecordService.js
+// C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\services\medicalRecordService.js
 
 import api from './api';
 
 const medicalRecordService = {
-  // Corrigido para chamar o endpoint do backend
   getRecordsByPatient: async (patientId) => {
     try {
-      const response = await api.get(`/api/records/by-patient/${patientId}`);
+      const response = await api.get(`/records/by-patient/${patientId}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.error || 'Erro ao buscar prontuários';
+      // Propaga o erro de forma consistente para ser tratado pelo componente
+      throw error;
     }
   },
 
   createRecord: async (recordData) => {
     try {
-      const response = await api.post('/api/records', recordData);
+      const response = await api.post('/records', recordData);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.error || 'Erro ao criar prontuário';
+      throw error;
     }
   },
 
   getRecordById: async (recordId) => {
     try {
-      const response = await api.get(`/api/records/${recordId}`);
+      const response = await api.get(`/records/${recordId}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.error || 'Erro ao buscar prontuário';
+      throw error;
     }
   },
 
   updateRecord: async (recordId, recordData) => {
     try {
-      const response = await api.put(`/api/records/${recordId}`, recordData);
+      const response = await api.put(`/records/${recordId}`, recordData);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.error || 'Erro ao atualizar prontuário';
+      throw error;
     }
   },
 
   deleteRecord: async (recordId) => {
     try {
-      await api.delete(`/api/records/${recordId}`);
-      return { success: true };
+      const response = await api.delete(`/records/${recordId}`);
+      return response.data;
     } catch (error) {
-      throw error.response?.data?.error || 'Erro ao deletar prontuário';
+      throw error;
     }
   },
 };

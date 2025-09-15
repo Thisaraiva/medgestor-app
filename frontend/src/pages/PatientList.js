@@ -1,11 +1,12 @@
 // frontend/src/pages/PatientList.js
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom'; // Importa Link e useLocation
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import patientService from '../services/patientService';
 import { useAuth } from '../context/AuthContext';
-import ConfirmDialog from '../components/ConfirmDialog'; // Importa o componente de confirmação
+import ConfirmDialog from '../components/ConfirmDialog';
+import { FaEdit, FaTrash, FaPrescriptionBottleAlt } from 'react-icons/fa'; // Importado novo ícone
 
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
@@ -16,10 +17,9 @@ const PatientList = () => {
   const [actionMessage, setActionMessage] = useState('');
   const [isActionError, setIsActionError] = useState(false);
   const { user } = useAuth();
-  const navigate = useNavigate(); // Hook para navegação
-  const location = useLocation(); // Hook para acessar o state da localização
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Função para buscar pacientes do backend
   const fetchPatients = async () => {
     setLoading(true);
     setError(null);
@@ -34,26 +34,26 @@ const PatientList = () => {
     }
   };
 
-  // Efeito para carregar pacientes quando o componente é montado
   useEffect(() => {
     fetchPatients();
-    // Verifica se há uma mensagem no state da localização (vindo do PatientFormPage)
     if (location.state && location.state.message) {
       setActionMessage(location.state.message);
       setIsActionError(location.state.isError || false);
-      // Limpa a mensagem do state para que não apareça novamente ao navegar
       navigate(location.pathname, { replace: true, state: {} });
       setTimeout(() => setActionMessage(''), 3000);
     }
-  }, [location.state, navigate]); // Adicionado navigate como dependência
+  }, [location.state, navigate]);
 
-  // Funções para CRUD
   const handleAddPatient = () => {
-    navigate('/patients/new'); // Navega para a página de adição de paciente
+    navigate('/patients/new');
   };
 
   const handleEditPatient = (patient) => {
-    navigate(`/patients/edit/${patient.id}`); // Navega para a página de edição de paciente
+    navigate(`/patients/edit/${patient.id}`);
+  };
+
+  const handleViewPrescriptions = (patientId) => {
+    navigate(`/patients/${patientId}/prescriptions`);
   };
 
   const confirmDeletePatient = (patientId) => {
@@ -81,9 +81,12 @@ const PatientList = () => {
     }
   };
 
-  // Verifica se o usuário tem permissão para gerenciar pacientes (Secretária, Médico, Admin)
   const canManagePatients = user && (
     user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
+  );
+
+  const canPrescribe = user && (
+    user.role === 'admin' || user.role === 'doctor'
   );
 
   if (loading) {
@@ -118,14 +121,12 @@ const PatientList = () => {
           )}
         </div>
 
-        {/* Mensagem de Ação (Sucesso/Erro) */}
         {actionMessage && (
           <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isActionError ? 'bg-error text-white' : 'bg-success text-white'}`}>
             {actionMessage}
           </div>
         )}
 
-        {/* Diálogo de Confirmação para Exclusão */}
         <ConfirmDialog
           show={showConfirmDialog}
           onClose={() => setShowConfirmDialog(false)}
@@ -153,9 +154,6 @@ const PatientList = () => {
                     Telefone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    Alergias
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
@@ -175,30 +173,38 @@ const PatientList = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
                       {patient.phone}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
-                      {patient.allergies || 'Nenhuma'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-2">
+                      <Link
+                        to={`/patients/${patient.id}/medical-records`}
+                        className="text-primary-DEFAULT hover:text-primary-dark"
+                        title="Ver Prontuários"
+                      >
+                        Prontuários
+                      </Link>
+                      {canPrescribe && (
+                        <button
+                          onClick={() => handleViewPrescriptions(patient.id)}
+                          className="text-primary-DEFAULT hover:text-primary-dark"
+                          title="Ver Prescrições"
+                        >
+                          <FaPrescriptionBottleAlt />
+                        </button>
+                      )}
                       {canManagePatients && (
                         <>
-                          <Link
-                            to={`/patients/${patient.id}/medical-records`}
-                            className="text-primary-DEFAULT hover:text-primary-dark mr-4"
-                            title="Ver Prontuários"
-                          >
-                            Prontuários
-                          </Link>
                           <button
                             onClick={() => handleEditPatient(patient)}
-                            className="text-primary-DEFAULT hover:text-primary-dark mr-4"
+                            className="text-primary-DEFAULT hover:text-primary-dark"
+                            title="Editar"
                           >
-                            Editar
+                            <FaEdit />
                           </button>
                           <button
                             onClick={() => confirmDeletePatient(patient.id)}
                             className="text-error hover:text-red-700"
+                            title="Excluir"
                           >
-                            Excluir
+                            <FaTrash />
                           </button>
                         </>
                       )}
