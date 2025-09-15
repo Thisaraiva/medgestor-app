@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import prescriptionService from '../services/prescriptionService';
 import patientService from '../services/patientService';
+import userService from '../services/userService'; // Importação do novo serviço
 import moment from 'moment';
 
 const PrescriptionPrint = () => {
@@ -31,7 +32,7 @@ const PrescriptionPrint = () => {
                 const fetchedPatient = await patientService.getPatientById(fetchedPrescription.patientId);
                 setPatient(fetchedPatient);
 
-                // 3. Buscar o médico (assumindo que há um serviço para isso)
+                // 3. Buscar o médico (assumindo que o ID do médico está na prescrição)
                 const fetchedDoctor = await userService.getUserById(fetchedPrescription.doctorId);
                 setDoctor(fetchedDoctor);
 
@@ -39,7 +40,7 @@ const PrescriptionPrint = () => {
                 // Atraso para garantir que todos os dados foram renderizados antes de imprimir
                 setTimeout(() => {
                     window.print();
-                }, 1000); 
+                }, 1000);
 
             } catch (err) {
                 console.error('Erro ao buscar dados para impressão:', err);
@@ -67,7 +68,8 @@ const PrescriptionPrint = () => {
             </div>
         );
     }
-    
+
+    // Usando a verificação opcional para evitar erros de renderização
     if (!prescription || !patient || !doctor) {
         return (
             <div className="flex justify-center items-center h-screen bg-gray-100">
@@ -132,28 +134,28 @@ const PrescriptionPrint = () => {
                 </div>
 
                 <hr className="my-6 border-gray-300" />
-                
+
                 <h2 className="section-title text-xl font-bold border-b-2 border-primary-dark pb-2 mb-4">Prescrição</h2>
 
                 <div className="medication-details p-4 bg-gray-100 rounded-md">
                     <h3 className="text-lg font-semibold">{prescription.medication}</h3>
                     <p className="text-sm text-text-DEFAULT mt-1">
-                        **Dosagem:** {prescription.dosage || 'N/A'}
+                        Dosagem: {prescription.dosage || 'N/A'}
                     </p>
                     <p className="text-sm text-text-DEFAULT">
-                        **Frequência:** {prescription.frequency || 'N/A'}
+                        Frequência: {prescription.frequency || 'N/A'}
                     </p>
                     <p className="text-sm text-text-DEFAULT">
-                        **Duração:** {prescription.duration || 'N/A'}
+                        Duração: {prescription.duration || 'N/A'}
                     </p>
                     <p className="text-sm text-text-DEFAULT mt-2">
-                        **Instruções de Administração:**
+                        Instruções de Administração:
                         <br />
                         {prescription.administrationInstructions || 'Não especificado.'}
                     </p>
                     {prescription.notes && (
                         <p className="text-sm text-text-DEFAULT mt-2">
-                            **Observações:**
+                            Observações:
                             <br />
                             {prescription.notes}
                         </p>
