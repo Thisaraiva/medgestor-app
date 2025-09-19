@@ -1,14 +1,15 @@
 // C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\components\PrescriptionPrint.js
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import prescriptionService from '../services/prescriptionService';
 import patientService from '../services/patientService';
-import userService from '../services/userService'; // Importação do novo serviço
+import userService from '../services/userService';
 import moment from 'moment';
 
 const PrescriptionPrint = () => {
     const { prescriptionId } = useParams();
+    const navigate = useNavigate();
     const [prescription, setPrescription] = useState(null);
     const [patient, setPatient] = useState(null);
     const [doctor, setDoctor] = useState(null);
@@ -24,23 +25,20 @@ const PrescriptionPrint = () => {
             }
 
             try {
-                // 1. Buscar a prescrição
+                // Busca a prescrição
                 const fetchedPrescription = await prescriptionService.getPrescriptionById(prescriptionId);
                 setPrescription(fetchedPrescription);
 
-                // 2. Buscar o paciente
-                const fetchedPatient = await patientService.getPatientById(fetchedPrescription.patientId);
-                setPatient(fetchedPatient);
+                // Busca o paciente e o médico em paralelo para melhor performance
+                const [fetchedPatient, fetchedDoctor] = await Promise.all([
+                    patientService.getPatientById(fetchedPrescription.patientId),
+                    userService.getUserById(fetchedPrescription.doctorId)
+                ]);
 
-                // 3. Buscar o médico (assumindo que o ID do médico está na prescrição)
-                const fetchedDoctor = await userService.getUserById(fetchedPrescription.doctorId);
+                setPatient(fetchedPatient);
                 setDoctor(fetchedDoctor);
 
                 setLoading(false);
-                // Atraso para garantir que todos os dados foram renderizados antes de imprimir
-                setTimeout(() => {
-                    window.print();
-                }, 1000);
 
             } catch (err) {
                 console.error('Erro ao buscar dados para impressão:', err);
@@ -52,33 +50,19 @@ const PrescriptionPrint = () => {
 
         fetchPrescriptionData();
     }, [prescriptionId]);
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-gray-100">
-                <div className="text-center text-primary-dark">Carregando dados da prescrição para impressão...</div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-8 text-center text-white bg-error rounded-lg shadow-md">
-                {error}
-            </div>
-        );
-    }
-
-    // Usando a verificação opcional para evitar erros de renderização
-    if (!prescription || !patient || !doctor) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-gray-100">
-                <div className="text-center text-text-light">Dados incompletos para impressão.</div>
-            </div>
-        );
-    }
-
-    // Estilos para impressão (tailwind não funciona em @media print)
+    
+    // Função para voltar para a página de prescrições do paciente
+    const handleGoBack = () => {
+        if (patient && patient.id) {
+            navigate(`/patients/${patient.id}/prescriptions`);
+        } else {
+            // Em caso de falha, tenta voltar para a página anterior do histórico
+            navigate(-1);
+        }
+    };
+    
+    // Usa uma classe CSS para elementos que não devem ser impressos
+    // e o botão de voltar para a página de prescrições
     const printStyles = `
         @page {
             size: A4;
@@ -114,11 +98,60 @@ const PrescriptionPrint = () => {
             padding: 15px;
             margin-bottom: 20px;
         }
+        
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
     `;
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-100">
+                <div className="text-center text-primary-dark">Carregando dados da prescrição...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-8 text-center text-white bg-error rounded-lg shadow-md">
+                {error}
+            </div>
+        );
+    }
+
+    if (!prescription || !patient || !doctor) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-100">
+                <div className="text-center text-text-light">Dados incompletos para impressão.</div>
+            </div>
+        );
+    }
+    
+    // Usa a mesma classe para o botão de voltar e para o botão de impressão.
+    // Isso é mais conciso e evita a repetição de código.
+    const buttonClass = "bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-light transition duration-200 flex items-center gap-2";
 
     return (
         <>
             <style>{printStyles}</style>
+            <div className="no-print flex justify-end gap-4 p-4">
+                <button
+                    onClick={handleGoBack}
+                    className={buttonClass}
+                >
+                    Voltar para Prescrições
+                </button>
+                <button
+                    onClick={() => window.print()}
+                    className={buttonClass}
+                >
+                    Imprimir Receita
+                </button>
+            </div>
+            
             <div className="print-container p-8 mx-auto my-8 bg-white border border-gray-300 rounded-lg shadow-lg">
                 <div className="header text-center mb-8">
                     <h1 className="text-3xl font-bold text-primary-dark">Receita Médica</h1>

@@ -5,15 +5,6 @@ import prescriptionService from '../services/prescriptionService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-/**
- * Form component for adding or editing prescriptions.
- *
- * @param {object} props - Component properties.
- * @param {object} [props.prescription] - Prescription object for editing. If null, it's an add form.
- * @param {string} props.patientId - The ID of the patient.
- * @param {object} props.patient - The patient object.
- * @param {function} props.onSuccess - Function to be called after successful submission.
- */
 const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
   const [medication, setMedication] = useState('');
   const [dosage, setDosage] = useState('');
