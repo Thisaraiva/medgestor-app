@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import patientService from '../services/patientService'; // Importa o serviço de paciente
-
+import moment from 'moment'; // Importa a biblioteca moment
 
 const PatientForm = ({ patient, onSubmit }) => {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
-  const [email, setEmail] = useState(''); // Adicionado estado para email
+  // NOVO ESTADO: Data de Nascimento
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [email, setEmail] = useState(''); 
   const [phone, setPhone] = useState('');
   const [allergies, setAllergies] = useState('');
   const [message, setMessage] = useState('');
@@ -19,14 +21,19 @@ const PatientForm = ({ patient, onSubmit }) => {
     if (patient) {
       setName(patient.name || '');
       setCpf(patient.cpf || '');
-      setEmail(patient.email || ''); // Preenche o email
+      // TRATAMENTO DA DATA DE NASCIMENTO: Formata para 'YYYY-MM-DD' para o input type="date"
+      // Se houver data, usa moment para garantir o formato correto para o input HTML
+      const formattedDate = patient.dateOfBirth ? moment(patient.dateOfBirth).format('YYYY-MM-DD') : '';
+      setDateOfBirth(formattedDate);
+      setEmail(patient.email || ''); 
       setPhone(patient.phone || '');
       setAllergies(patient.allergies || '');
     } else {
       // Limpa o formulário se não houver paciente para edição
       setName('');
       setCpf('');
-      setEmail(''); // Limpa o email
+      setDateOfBirth(''); // Limpa a data de nascimento
+      setEmail(''); 
       setPhone('');
       setAllergies('');
     }
@@ -34,7 +41,7 @@ const PatientForm = ({ patient, onSubmit }) => {
     setIsError(false);
   }, [patient]);
 
- 
+  
   const formatCpf = (value) => {
     // Remove tudo que não for dígito
     const numericValue = value.replace(/\D/g, '');
@@ -57,12 +64,29 @@ const PatientForm = ({ patient, onSubmit }) => {
     setIsError(false);
     setLoading(true);
 
-    const patientData = { name, cpf, email, phone, allergies };
+    // Envia a string de data (YYYY-MM-DD) para o backend, ou null se vazia
+    // O backend fará a validação de data
+    const finalDateOfBirth = dateOfBirth || null;
+    
+    // Inclui dateOfBirth nos dados do paciente
+    const patientData = { 
+        name, 
+        cpf, 
+        dateOfBirth: finalDateOfBirth, // NOVO CAMPO INCLUÍDO
+        email, 
+        phone, 
+        allergies 
+    };
 
 
     try {
       if (patient) {
-        await patientService.updatePatient(patient.id, patientData); // Chama o serviço de atualização
+        // Remove campos vazios ou nulos para atualização (boa prática)
+        const dataToUpdate = Object.fromEntries(
+            Object.entries(patientData).filter(([, value]) => value !== null && value !== '')
+        );
+
+        await patientService.updatePatient(patient.id, dataToUpdate); // Chama o serviço de atualização
         setMessage('Paciente atualizado com sucesso!');
         onSubmit('Paciente atualizado com sucesso!', false); // Passa mensagem e status para o pai
       } else {
@@ -72,7 +96,8 @@ const PatientForm = ({ patient, onSubmit }) => {
         // Limpa o formulário após o cadastro
         setName('');
         setCpf('');
-        setEmail(''); // Limpa o email
+        setDateOfBirth(''); // Limpa a data de nascimento
+        setEmail(''); 
         setPhone('');
         setAllergies('');
       }
@@ -134,7 +159,23 @@ const PatientForm = ({ patient, onSubmit }) => {
           />
         </div>
 
-        {/* Novo campo de Email */}
+        {/* NOVO CAMPO: Data de Nascimento (após CPF) */}
+        <div className="mb-4">
+            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientDateOfBirth">
+                Data de Nascimento (Opcional)
+            </label>
+            <input
+                type="date"
+                id="patientDateOfBirth"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
+                placeholder="AAAA-MM-DD"
+                autoComplete="bday"
+            />
+        </div>
+
+        {/* Campo de Email */}
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientEmail">
             Email (Opcional)

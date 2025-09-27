@@ -3,28 +3,22 @@
 const { Patient } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
 const { Op } = require('sequelize');
-const Joi = require('joi'); 
-
-
-const patientSchema = Joi.object({
-  name: Joi.string().min(3).required(),
-  cpf: Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).required().messages({
-    'string.pattern.base': 'CPF deve estar no formato 000.000.000-00',
-    'any.required': 'CPF é obrigatório',
-  }),
-  email: Joi.string().email().allow(null, ''),
-  phone: Joi.string().allow(null, ''),
-  allergies: Joi.string().allow(null, ''),
-});
+// REMOVEMOS ESTA IMPORTAÇÃO, QUE CAUSAVA A REFERÊNCIA CIRCULAR:
+// const { createPatientSchema } = require('../controllers/patientController');
 
 
 const createPatient = async (data) => {
-  
-  const { error } = patientSchema.validate(data);
+  // O Controller já validou o formato dos dados usando Joi.
+  // Se chegamos aqui, os dados 'data' estão estruturados corretamente.
+  // REMOVEMOS A VALIDAÇÃO REDUNDANTE QUE CAUSAVA O ERRO:
+  /*
+  const { error } = createPatientSchema.validate(data);
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
+  */
 
+  // MANTEMOS APENAS A VALIDAÇÃO DA REGRA DE NEGÓCIO (CPF duplicado)
   const existingPatient = await Patient.findOne({ where: { cpf: data.cpf } });
   if (existingPatient) {
     throw new ValidationError('CPF já registrado');
@@ -65,6 +59,7 @@ const updatePatient = async (id, data) => {
     }
   }
 
+  // Corrigimos para garantir que data.email existe e tem um valor antes de comparar
   if (data.email && data.email !== patient.email) {
     const existingPatientWithEmail = await Patient.findOne({ where: { email: data.email, id: { [Op.ne]: id } } }); // Adicionado Op.ne para excluir o próprio paciente
     if (existingPatientWithEmail) {
