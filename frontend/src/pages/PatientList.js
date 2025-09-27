@@ -6,7 +6,15 @@ import Navbar from '../components/Navbar';
 import patientService from '../services/patientService';
 import { useAuth } from '../context/AuthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { FaEdit, FaTrash, FaPrescriptionBottleAlt } from 'react-icons/fa'; // Importado novo ícone
+import { FaEdit, FaTrash, FaPrescriptionBottleAlt } from 'react-icons/fa';
+import moment from 'moment'; // Importado moment para formatação de data
+
+// Função auxiliar para formatar a data de nascimento
+const formatDateOfBirth = (dateString) => {
+  if (!dateString) return 'N/A';
+  // O formato armazenado no backend é YYYY-MM-DD (DATEONLY)
+  return moment(dateString).format('DD/MM/YYYY');
+};
 
 const PatientList = () => {
   const [patients, setPatients] = useState([]);
@@ -81,6 +89,7 @@ const PatientList = () => {
     }
   };
 
+  // Funções de permissão (mantidas, estão DRY)
   const canManagePatients = user && (
     user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
   );
@@ -147,6 +156,10 @@ const PatientList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                     CPF
                   </th>
+                  {/* NOVO CABEÇALHO */}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    Nascimento
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                     Email
                   </th>
@@ -166,6 +179,10 @@ const PatientList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
                       {patient.cpf}
+                    </td>
+                    {/* NOVA CÉLULA: Data de Nascimento */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
+                      {formatDateOfBirth(patient.dateOfBirth)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-text-light">
                       {patient.email}

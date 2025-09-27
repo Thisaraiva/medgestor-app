@@ -17,6 +17,11 @@ module.exports = {
         allowNull: false,
         unique: true,
       },
+      // NOVO CAMPO: Data de Nascimento
+      dateOfBirth: {
+        type: Sequelize.DATEONLY, // Tipo para armazenar apenas a data (AAAA-MM-DD)
+        allowNull: true,
+      },
       email: {
         type: Sequelize.STRING(255),
         allowNull: true,

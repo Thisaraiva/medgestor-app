@@ -1,11 +1,9 @@
 // C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\services\authService.js
 
-import api from './api'; // Usar a instância única da API
+import api from './api';
 
 const authService = {
-  login: (email, password) => {
-    // Usar a instância 'api' para o login também
-    // O interceptor do `api` não injeta token para login, pois ainda não existe, então está correto usar ele
+  login: (email, password) => {   
     return api.post('/auth/login', { email, password });
   },
 
@@ -13,9 +11,7 @@ const authService = {
     return api.post('/auth/register', userData);
   },
 
-  getAllUsers: () => {
-    // Note que a rota para usuários é '/api/users' no backend
-    // Como api.js já tem '/api', a chamada é apenas '/users'
+  getAllUsers: () => {    
     return api.get('/users');
   },
 

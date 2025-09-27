@@ -40,6 +40,11 @@ const Patient = sequelize.define('Patient', {
       },
     },
   },
+  // NOVO CAMPO: Data de Nascimento
+  dateOfBirth: {
+    type: DataTypes.DATEONLY, // Usar DATEONLY para armazenar apenas a data
+    allowNull: true, // Permitir null se não for obrigatório
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: true,
