@@ -6,8 +6,9 @@ services:
     container_name: medgestor-app-backend-1
     ports:
       - "5000:5000"
-    env_file:
-      - backend/.env
+    # REMOVIDO: env_file: - backend/.env
+    #env_file:
+    #  - backend/.env
     depends_on:
       db_test:
         condition: service_healthy
@@ -22,6 +23,11 @@ services:
       - DB_PORT_TEST=5432
       - SEED_DEFAULT_PASSWORD=pass123
       - JWT_SECRET=pBXlIutbAqH8liW667abZxQnoNkvKMRJTGfRu5X6sfA=
+      # Adicionamos as variáveis de DEV aqui para que o DB de Desenvolvimento
+      # seja acessível caso o backend tente se conectar a ele (boa prática)
+      - DB_NAME=medgestor
+      - DB_HOST=db
+      - DB_PORT=5432
     networks:
       - medgestor-network
     restart: unless-stopped

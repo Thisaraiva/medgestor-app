@@ -9,21 +9,16 @@ const { Op } = require('sequelize');
 
 const createPatient = async (data) => {
   // O Controller já validou o formato dos dados usando Joi.
-  // Se chegamos aqui, os dados 'data' estão estruturados corretamente.
-  // REMOVEMOS A VALIDAÇÃO REDUNDANTE QUE CAUSAVA O ERRO:
-  /*
-  const { error } = createPatientSchema.validate(data);
-  if (error) {
-    throw new ValidationError(error.details[0].message);
-  }
-  */
+  // O Sequelize (e o BD) farão a validação UNIQUE para CPF e E-mail.
+  // O errorMiddleware traduzirá o erro SequelizeUniqueConstraintError.
 
-  // MANTEMOS APENAS A VALIDAÇÃO DA REGRA DE NEGÓCIO (CPF duplicado)
-  const existingPatient = await Patient.findOne({ where: { cpf: data.cpf } });
-  if (existingPatient) {
-    throw new ValidationError('CPF já registrado');
-  }
+  // CÓDIGO REMOVIDO:
+  // const existingPatient = await Patient.findOne({ where: { cpf: data.cpf } });
+  // if (existingPatient) {
+  // throw new ValidationError('CPF já registrado');
+  // }
 
+  // Deixamos apenas a criação. Se houver duplicidade (CPF ou Email), o Sequelize lança o erro.
   return Patient.create(data);
 };
 
@@ -51,6 +46,21 @@ const updatePatient = async (id, data) => {
   if (!patient) {
     throw new NotFoundError('Paciente não encontrado');
   }
+
+  // MANTEMOS estas checagens manuais porque são *regras de negócio*
+  // aplicadas a um objeto existente. O Sequelize só valida o objeto
+  // no momento do `update`, mas a lógica de "verificar se outro paciente
+  // já tem aquele dado" é do Service.
+
+  // --------------------------------------------------------------------------
+  // MELHORIA: Podemos simplificar, removendo a duplicação de lógica aqui também
+  // e confiar que o Sequelize vai fazer o check de UNIQUE, mas, ao atualizar,
+  // o check manual com `Op.ne` é a maneira mais limpa de garantir que a 
+  // restrição UNIQUE é aplicada corretamente APENAS em outros registros.
+  // O `update` do Sequelize com `validate: true` faria o check, mas o `Op.ne`
+  // garante uma mensagem específica para o cenário de "duplicidade em outro registro".
+  // MANTENDO o padrão que já estava em update para evitar regressão.
+  // --------------------------------------------------------------------------
 
   if (data.cpf && data.cpf !== patient.cpf) {
     const existingPatientWithCpf = await Patient.findOne({ where: { cpf: data.cpf, id: { [Op.ne]: id } } }); // Adicionado Op.ne para excluir o próprio paciente

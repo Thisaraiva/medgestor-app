@@ -51,7 +51,7 @@ const AppointmentList = () => {
       setActionMessage(location.state.message);
       setIsActionError(location.state.isError || false);
       navigate(location.pathname, { replace: true, state: {} });
-      setTimeout(() => setActionMessage(''), 3000);
+      setTimeout(() => setActionMessage(''), 5000);
     }
   }, [currentUser, location.state, navigate]);
 

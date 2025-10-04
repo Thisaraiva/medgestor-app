@@ -1,5 +1,12 @@
+// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\server.js
+
 const express = require('express');
 const cors = require('cors');
+// O require de 'dotenv' no início do arquivo é desnecessário no docker-compose
+// onde as variáveis são injetadas. Mantenha-o no config/database se for necessário
+// para ambientes locais, mas aqui não é estritamente necessário se database.js
+// já lida com isso.
+
 const sequelize = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const patientRoutes = require('./routes/patientRoutes');
@@ -28,28 +35,35 @@ app.use('/api/users', userRoutes);
 // Error Handling
 app.use(errorMiddleware);
 
-const PORT = process.env.PORT || 5000;
+// Exportamos a instância do app para ser usada pelo Supertest nos testes
+module.exports = app;
 
-// Graceful Shutdown
-const server = app.listen(PORT, async () => {
-  try {
-    await sequelize.authenticate();
-    if (process.env.NODE_ENV === 'test') {
-      //await sequelize.sync({ force: true });
+// A lógica de inicialização do servidor real (listen) deve ser executada apenas
+// se o arquivo for o ponto de entrada principal, ou seja, se não estiver sendo
+// importado por outro módulo (como o Jest).
+// Isso garante que o servidor rode no Docker, mesmo com NODE_ENV='test'.
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+
+  const server = app.listen(PORT, async () => {
+    try {
+      await sequelize.authenticate();
+      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode.`);
+    } catch (err) {
+      console.error('Erro ao conectar ao banco:', err);
+      // Em produção, a falha na conexão é fatal.
+      process.exit(1);
     }
-    console.log(`Server running on port ${PORT}`);
-  } catch (err) {
-    console.error('Erro ao conectar ao banco:', err);
-    process.exit(1);
-  }
-});
+  });
 
-process.on('SIGTERM', async () => {
-  console.log('Shutting down server...');
-  server.close(() => {
-    sequelize.close().then(() => {
-      console.log('Database connection closed');
-      process.exit(0);
+  // Graceful Shutdown
+  process.on('SIGTERM', async () => {
+    console.log('Shutting down server...');
+    server.close(() => {
+      sequelize.close().then(() => {
+        console.log('Database connection closed');
+        process.exit(0);
+      });
     });
   });
-});
+}

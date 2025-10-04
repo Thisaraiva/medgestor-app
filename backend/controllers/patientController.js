@@ -18,8 +18,8 @@ const cpfSchema = Joi.string().pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/).messages({
 });
 
 const dateOfBirthSchema = Joi.string().isoDate().allow(null, '').messages({
-    'string.isoDate': 'Data de Nascimento deve ser uma data válida (AAAA-MM-DD)',
-    'string.base': 'Data de Nascimento deve ser uma string',
+  'string.isoDate': 'Data de Nascimento deve ser uma data válida (AAAA-MM-DD)',
+  'string.base': 'Data de Nascimento deve ser uma string',
 });
 
 const emailSchema = Joi.string().email().allow(null, '').messages({
@@ -56,17 +56,15 @@ const updatePatientSchema = Joi.object({
   allergies: allergiesSchema,
 }).min(1); // Pelo menos um campo deve ser fornecido para atualização
 
-// Exportamos os schemas para que o Service possa importá-los e usá-los, eliminando a repetição.
-module.exports.createPatientSchema = createPatientSchema;
-module.exports.updatePatientSchema = updatePatientSchema;
-
 // Função para criar paciente
 exports.createPatient = asyncHandler(async (req, res) => {
   const { error, value } = createPatientSchema.validate(req.body);
   if (error) {
     throw new ValidationError(error.details[0].message); // Usar ValidationError
   }
-  // No serviço, usaremos o 'value' validado.
+  // O serviço (patientService.js) é onde o erro do Sequelize UniqueConstraintError deve ser tratado
+  // e relançado como um erro customizado, ou o errorMiddleware deve ser capaz de pegá-lo.
+  // Como o asyncHandler já está aplicado, o errorMiddleware deverá capturar o erro do Service/Sequelize.
   const newPatient = await patientService.createPatient(value);
   res.status(201).json(newPatient);
 });
@@ -91,7 +89,7 @@ exports.updatePatient = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details.map(x => x.message).join(', ')); // Usar ValidationError
   }
-  // A validação de CPF/Email duplicado será feita no service
+  // A validação de CPF/Email duplicado será feita no service ou capturada pelo errorMiddleware
   const updatedPatient = await patientService.updatePatient(id, value);
   res.status(200).json({ message: 'Paciente atualizado com sucesso!', patient: updatedPatient });
 });
