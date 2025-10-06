@@ -5,17 +5,16 @@ const prescriptionService = require('../services/prescriptionService');
 const { ValidationError } = require('../errors/errors');
 const Joi = require('joi');
 
-// Schema para criação de prescrição, incluindo doctorId
+// Schema para criação de prescrição. O doctorId será injetado do req.user
 const createPrescriptionSchema = Joi.object({
   patientId: Joi.string().uuid().required(),
-  doctorId: Joi.string().uuid().required(), // Adiciona o campo doctorId obrigatório
   medication: Joi.string().min(3).required(),
   dosage: Joi.string().allow(null, ''),
   frequency: Joi.string().allow(null, ''),
   duration: Joi.string().allow(null, ''),
   administrationInstructions: Joi.string().allow(null, ''),
   notes: Joi.string().allow(null, ''),
-  dateIssued: Joi.date().iso().required(),
+  dateIssued: Joi.date().iso().required(), // Tornamos obrigatório
   status: Joi.string().valid('active', 'inactive', 'expired').default('active'),
 });
 
@@ -38,7 +37,12 @@ exports.createPrescription = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details[0].message);
   }
-  const newPrescription = await prescriptionService.createPrescription(value);
+
+  // INJEÇÃO DO doctorId: Obtemos o ID do usuário autenticado e o adicionamos aos dados.
+  const doctorId = req.user.id;
+  const prescriptionData = { ...value, doctorId };
+
+  const newPrescription = await prescriptionService.createPrescription(prescriptionData);
   res.status(201).json(newPrescription);
 });
 
@@ -58,7 +62,8 @@ exports.updatePrescription = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { error, value } = updatePrescriptionSchema.validate(req.body);
   if (error) {
-    throw new ValidationError(error.details.map(x => x.message).join(', '));
+    // Melhoramos a mensagem de erro de atualização
+    throw new ValidationError(error.details.map(x => x.message).join('; '));
   }
   const updatedPrescription = await prescriptionService.updatePrescription(id, value);
   res.status(200).json({ message: 'Prescrição atualizada com sucesso!', prescription: updatedPrescription });

@@ -9,7 +9,7 @@ const PatientForm = ({ patient, onSubmit }) => {
   const [cpf, setCpf] = useState('');
   // NOVO ESTADO: Data de Nascimento
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [email, setEmail] = useState(''); 
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [allergies, setAllergies] = useState('');
   const [message, setMessage] = useState('');
@@ -25,7 +25,7 @@ const PatientForm = ({ patient, onSubmit }) => {
       // Se houver data, usa moment para garantir o formato correto para o input HTML
       const formattedDate = patient.dateOfBirth ? moment(patient.dateOfBirth).format('YYYY-MM-DD') : '';
       setDateOfBirth(formattedDate);
-      setEmail(patient.email || ''); 
+      setEmail(patient.email || '');
       setPhone(patient.phone || '');
       setAllergies(patient.allergies || '');
     } else {
@@ -33,7 +33,7 @@ const PatientForm = ({ patient, onSubmit }) => {
       setName('');
       setCpf('');
       setDateOfBirth(''); // Limpa a data de nascimento
-      setEmail(''); 
+      setEmail('');
       setPhone('');
       setAllergies('');
     }
@@ -41,7 +41,7 @@ const PatientForm = ({ patient, onSubmit }) => {
     setIsError(false);
   }, [patient]);
 
-  
+
   const formatCpf = (value) => {
     // Remove tudo que não for dígito
     const numericValue = value.replace(/\D/g, '');
@@ -67,15 +67,15 @@ const PatientForm = ({ patient, onSubmit }) => {
     // Envia a string de data (YYYY-MM-DD) para o backend, ou null se vazia
     // O backend fará a validação de data
     const finalDateOfBirth = dateOfBirth || null;
-    
+
     // Inclui dateOfBirth nos dados do paciente
-    const patientData = { 
-        name, 
-        cpf, 
-        dateOfBirth: finalDateOfBirth, // NOVO CAMPO INCLUÍDO
-        email, 
-        phone, 
-        allergies 
+    const patientData = {
+      name,
+      cpf,
+      dateOfBirth: finalDateOfBirth, // NOVO CAMPO INCLUÍDO
+      email,
+      phone,
+      allergies
     };
 
 
@@ -83,7 +83,7 @@ const PatientForm = ({ patient, onSubmit }) => {
       if (patient) {
         // Remove campos vazios ou nulos para atualização (boa prática)
         const dataToUpdate = Object.fromEntries(
-            Object.entries(patientData).filter(([, value]) => value !== null && value !== '')
+          Object.entries(patientData).filter(([, value]) => value !== null && value !== '')
         );
 
         await patientService.updatePatient(patient.id, dataToUpdate); // Chama o serviço de atualização
@@ -97,7 +97,7 @@ const PatientForm = ({ patient, onSubmit }) => {
         setName('');
         setCpf('');
         setDateOfBirth(''); // Limpa a data de nascimento
-        setEmail(''); 
+        setEmail('');
         setPhone('');
         setAllergies('');
       }
@@ -161,18 +161,18 @@ const PatientForm = ({ patient, onSubmit }) => {
 
         {/* NOVO CAMPO: Data de Nascimento (após CPF) */}
         <div className="mb-4">
-            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientDateOfBirth">
-                Data de Nascimento (Opcional)
-            </label>
-            <input
-                type="date"
-                id="patientDateOfBirth"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
-                placeholder="AAAA-MM-DD"
-                autoComplete="bday"
-            />
+          <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientDateOfBirth">
+            Data de Nascimento (Opcional)
+          </label>
+          <input
+            type="date"
+            id="patientDateOfBirth"
+            value={dateOfBirth}
+            onChange={(e) => setDateOfBirth(e.target.value)}
+            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
+            placeholder="AAAA-MM-DD"
+            autoComplete="bday"
+          />
         </div>
 
         {/* Campo de Email */}

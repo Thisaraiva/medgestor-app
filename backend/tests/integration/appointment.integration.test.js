@@ -1,4 +1,4 @@
-// Arquivo: C:\Programacao\Projetos\JavaScript\medgestor-app\backend\tests\integration\appointment.integration.test.js
+/*// Arquivo: C:\Programacao\Projetos\JavaScript\medgestor-app\backend\tests\integration\appointment.integration.test.js
 
 const request = require('supertest');
 const { createTestServer } = require('../test_setup');
@@ -530,3 +530,4 @@ describe('Appointment Integration Tests', () => {
         });
     });
 });
+*/

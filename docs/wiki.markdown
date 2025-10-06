@@ -88,7 +88,7 @@ medgestor-app/
 │   │   │   ├── authService.unit.test.js
 │   │   │   ├── email.unit.test.js
 │   │   │   ├── patientService.unit.test.js
-│  偶    │   │   ├── prescriptionService.unit.test.js
+│   │   │   ├── prescriptionService.unit.test.js
 │   │   │   ├── recordService.unit.test.js
 │   │   │   └── userService.unit.test.js
 │   │   └── test_setup.js

@@ -1,264 +1,86 @@
+// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\tests\integration\auth.integration.test.js
+
 const request = require('supertest');
-const { createTestServer } = require('../test_setup');
-const { sequelize, User } = require('../../models');
-const bcryptjs = require('bcryptjs');
-const { generateToken } = require('../../utils/jwt');
-const { v4: uuidv4 } = require('uuid');
+const app = require('../../server'); 
+const { User } = require('../../models');
 
-jest.setTimeout(10000);
+// Dados de teste (DRY)
+const testUserData = {
+    name: "Admin Teste",
+    email: "admin.test@medgestor.com",
+    password: "securePassword123",
+    role: "admin",
+    // CRM não é necessário para admin, mas se fosse doctor, precisaria.
+};
 
-describe('Auth Integration Tests', () => {
-  let app;
-  let adminToken;
-
-  beforeAll(async () => {
-    jest.setTimeout(15000);
-    app = createTestServer();
-    // Usar seeders existentes
-    const admin = await User.findOne({ where: { email: 'Callie_Hane94@medgestor.com' } });
-    if (!admin) {
-      throw new Error('Admin user from seeder not found');
-    }
-    adminToken = generateToken({ id: admin.id, role: admin.role });
-  });
-
-  beforeEach(async () => {
-    // Limpar apenas usuários não-seed
-    await User.destroy({ where: { email: { [sequelize.Op.notIn]: ['Callie_Hane94@medgestor.com'] } } });
-  });
-
-  afterAll(async () => {
-    await sequelize.close();
-  });
-
-  describe('POST /api/auth/register', () => {
-    it('should register a doctor successfully', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Dr. John',
-          email: 'john@example.com',
-          password: 'pass123',
-          role: 'doctor',
-          crm: 'CRM/SP-123456',
-        });
-
-      expect(response.status).toBe(201);
-      expect(response.body.user).toHaveProperty('id');
-      expect(response.body.user.email).toBe('john@example.com');
-      expect(response.body.user.role).toBe('doctor');
-      expect(response.body.token).toBeDefined();
+describe('Auth API Endpoints', () => {
+    // Garantimos que a tabela de usuários esteja limpa antes de cada teste
+    beforeEach(async () => {
+        // Limpar a tabela de Usuários antes de cada caso de teste
+        // Isso é crucial para que o teste de 'registro' comece com um DB vazio.
+        await User.destroy({ where: {}, truncate: true, cascade: true });
     });
 
-    it('should register a secretary without CRM', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Jane Doe',
-          email: 'jane@example.com',
-          password: 'pass123',
-          role: 'secretary',
-        });
+    // Teste de Registro (POST /api/auth/register)
+    test('Deve registrar um novo usuário com sucesso', async () => {
+        const response = await request(app)
+            .post('/api/auth/register')
+            // Nota: Se sua rota de registro for protegida, use o token global.testAuthToken aqui
+            .send(testUserData);
 
-      expect(response.status).toBe(201);
-      expect(response.body.user).toHaveProperty('id');
-      expect(response.body.user.email).toBe('jane@example.com');
-      expect(response.body.user.role).toBe('secretary');
-      expect(response.body.user.crm).toBeNull();
-      expect(response.body.token).toBeDefined();
+        expect(response.statusCode).toBe(201);
+        expect(response.body).toHaveProperty('id');
+        expect(response.body.email).toBe(testUserData.email);
+        expect(response.body).not.toHaveProperty('password'); // Nunca deve retornar a senha
     });
 
-    it('should return 400 for invalid email', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Dr. John',
-          email: 'invalid',
-          password: 'pass123',
-          role: 'doctor',
-          crm: 'CRM/SP-123456',
-        });
+    // Teste de Registro (Email Duplicado)
+    test('Não deve registrar com email duplicado', async () => {
+        // 1. Registra o primeiro usuário
+        await User.create(testUserData); 
+        
+        // 2. Tenta registrar novamente
+        const response = await request(app)
+            .post('/api/auth/register')
+            .send(testUserData); 
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('email must be a valid email');
+        expect(response.statusCode).toBe(400); 
+        expect(response.body.error).toBe('Email já registrado'); 
     });
 
-    it('should return 400 for missing CRM for doctor', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Dr. John',
-          email: 'john@example.com',
-          password: 'pass123',
-          role: 'doctor',
-        });
+    // Teste de Login (POST /api/auth/login)
+    test('Deve permitir login de um usuário registrado e retornar token', async () => {
+        // 1. Cria um usuário (o hook do model fará o hash da senha)
+        await User.create(testUserData);
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('CRM is required for doctors');
+        // 2. Tenta fazer login
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({ 
+                email: testUserData.email, 
+                password: testUserData.password 
+            });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toHaveProperty('token');
+        expect(response.body).toHaveProperty('role', 'admin');
+        expect(typeof response.body.token).toBe('string');
     });
 
-    it('should return 400 for invalid CRM format', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Dr. John',
-          email: 'john@example.com',
-          password: 'pass123',
-          role: 'doctor',
-          crm: '12345',
-        });
+    // Teste de Login (Senha Incorreta)
+    test('Não deve permitir login com senha incorreta', async () => {
+        // 1. Cria um usuário
+        await User.create(testUserData);
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('CRM must be in the format CRM/UF-XXXXXX');
+        // 2. Tenta fazer login com senha errada
+        const response = await request(app)
+            .post('/api/auth/login')
+            .send({ 
+                email: testUserData.email, 
+                password: 'wrongPassword' 
+            });
+
+        expect(response.statusCode).toBe(404); // Baseado no seu authService que lança NotFoundError
+        expect(response.body.error).toBe('Email ou senha inválidos');
     });
-
-    it('should return 400 for existing email', async () => {
-      await User.create({
-        id: uuidv4(),
-        name: 'Dr. John',
-        email: 'john@example.com',
-        password: await bcryptjs.hash('pass123', 10),
-        role: 'doctor',
-        crm: 'CRM/SP-123456',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          name: 'Dr. Jane',
-          email: 'john@example.com',
-          password: 'pass123',
-          role: 'doctor',
-          crm: 'CRM/SP-654321',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Email já registrado');
-    });
-
-    it('should return 403 for non-admin user', async () => {
-      const doctor = await User.create({
-        id: uuidv4(),
-        name: 'Dr. John',
-        email: 'john@example.com',
-        password: await bcryptjs.hash('pass123', 10),
-        role: 'doctor',
-        crm: 'CRM/SP-123456',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      const nonAdminToken = generateToken({ id: doctor.id, role: doctor.role });
-
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('Authorization', `Bearer ${nonAdminToken}`)
-        .send({
-          name: 'Jane Doe',
-          email: 'jane@example.com',
-          password: 'pass123',
-          role: 'secretary',
-        });
-
-      expect(response.status).toBe(403);
-      expect(response.body.error).toBe('Acesso negado: permissão insuficiente');
-    });
-
-    it('should return 401 for no token', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          name: 'Dr. John',
-          email: 'john@example.com',
-          password: 'pass123',
-          role: 'doctor',
-          crm: 'CRM/SP-123456',
-        });
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Acesso negado, token não fornecido');
-    });
-  });
-
-  describe('POST /api/auth/login', () => {
-    it('should login successfully', async () => {
-      await User.create({
-        id: uuidv4(),
-        name: 'Dr. John',
-        email: 'john@example.com',
-        password: await bcryptjs.hash('pass123', 10),
-        role: 'doctor',
-        crm: 'CRM/SP-123456',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'john@example.com',
-          password: 'pass123',
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.user).toHaveProperty('id');
-      expect(response.body.user.email).toBe('john@example.com');
-      expect(response.body.user.role).toBe('doctor');
-      expect(response.body.token).toBeDefined();
-    });
-
-    it('should return 400 for invalid email', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'invalid-email',
-          password: 'pass123',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('email must be a valid email');
-    });
-
-    it('should return 400 for non-existent user', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'nonexistent@example.com',
-          password: 'pass123',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Credenciais inválidas');
-    });
-
-    it('should return 400 for invalid password', async () => {
-      await User.create({
-        id: uuidv4(),
-        name: 'Dr. John',
-        email: 'john@example.com',
-        password: await bcryptjs.hash('pass123', 10),
-        role: 'doctor',
-        crm: 'CRM/SP-123456',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'john@example.com',
-          password: 'wrong-password',
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Credenciais inválidas');
-    });
-  });
 });

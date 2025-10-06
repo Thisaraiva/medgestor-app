@@ -1,11 +1,11 @@
-// C:\Programacao\Projetos\JavaScript\medgestor-app\frontend\src\components\PrescriptionForm.js
-
 import React, { useState, useEffect } from 'react';
 import prescriptionService from '../services/prescriptionService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import moment from 'moment'; // Importamos moment para formatação de data
 
 const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
+  // 1. Estados
   const [medication, setMedication] = useState('');
   const [dosage, setDosage] = useState('');
   const [frequency, setFrequency] = useState('');
@@ -22,7 +22,11 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // 2. Efeito para inicialização do formulário
   useEffect(() => {
+    setMessage('');
+    setIsError(false);
+
     if (prescription) {
       setMedication(prescription.medication || '');
       setDosage(prescription.dosage || '');
@@ -30,8 +34,10 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
       setDuration(prescription.duration || '');
       setAdministrationInstructions(prescription.administrationInstructions || '');
       setNotes(prescription.notes || '');
-      // Formata a data para o formato de input 'date' (YYYY-MM-DD)
-      setDateIssued(prescription.dateIssued ? prescription.dateIssued.split('T')[0] : '');
+      
+      // Usamos moment para garantir a formatação correta YYYY-MM-DD
+      const formattedDate = prescription.dateIssued ? moment(prescription.dateIssued).format('YYYY-MM-DD') : '';
+      setDateIssued(formattedDate);
       setStatus(prescription.status || 'active');
     } else {
       setMedication('');
@@ -40,21 +46,20 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
       setDuration('');
       setAdministrationInstructions('');
       setNotes('');
-      setDateIssued(new Date().toISOString().split('T')[0]);
+      // Define a data de hoje como padrão para nova prescrição
+      setDateIssued(moment().format('YYYY-MM-DD'));
       setStatus('active');
     }
-
-    setMessage('');
-    setIsError(false);
   }, [prescription]);
 
+  // 3. Função de Submissão
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
     setIsError(false);
 
-    // Objeto com os dados para a prescrição, incluindo doctorId para criação.
+    // Objeto com os dados para a prescrição
     const prescriptionData = {
       medication,
       dosage,
@@ -68,24 +73,28 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
 
     try {
       if (prescription) {
-        // Na atualização, o doctorId não deve ser enviado no corpo da requisição.
-        // O backend já sabe qual prescrição atualizar através do ID na URL.
-        await prescriptionService.updatePrescription(prescription.id, prescriptionData);
+        // ATUALIZAÇÃO: doctorId não é enviado.
+        // Aplicando a boa prática de filtrar campos vazios/nulos, consistente com PatientForm.js
+        const dataToUpdate = Object.fromEntries(
+          Object.entries(prescriptionData).filter(([, value]) => value !== null && value !== '')
+        );
+
+        await prescriptionService.updatePrescription(prescription.id, dataToUpdate);
         setMessage('Prescrição atualizada com sucesso!');
       } else {
-        // Na criação, o patientId e o doctorId são necessários para vincular a prescrição.
+        // CRIAÇÃO: Adicionamos apenas o patientId. doctorId é injetado pelo backend (segurança).
         const newPrescriptionData = {
           ...prescriptionData,
           patientId,
-          doctorId: user.id,
+          // doctorId foi removido daqui, pois deve ser injetado pelo backend via middleware (Auth)
         };
         await prescriptionService.createPrescription(newPrescriptionData);
         setMessage('Prescrição criada com sucesso!');
       }
       setIsError(false);
-      onSuccess(); // Chama onSuccess sem passar dados
+      onSuccess();
     } catch (err) {
-      console.error('Erro ao salvar prescrição:', err);
+      console.error('Erro ao salvar prescrição:', err.response?.data?.message || err.message);
       const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Erro ao salvar prescrição. Tente novamente.';
       setMessage(errorMessage);
       setIsError(true);
@@ -94,6 +103,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
     }
   };
 
+  // 4. Renderização (com ajuste de mb-4 para mb-3 para layout mais compacto)
   return (
     <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium">
       <h2 className="text-2xl font-bold text-primary-dark mb-6 text-center">
@@ -113,7 +123,8 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="mb-4">
+        {/* Usando mb-3 para um espaçamento mais compacto, emulando a formatação desejada */}
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="medication">
             Medicação
           </label>
@@ -127,7 +138,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="dosage">
             Dosagem
           </label>
@@ -140,7 +151,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="frequency">
             Frequência
           </label>
@@ -153,7 +164,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="duration">
             Duração
           </label>
@@ -166,7 +177,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="administrationInstructions">
             Instruções de Administração
           </label>
@@ -179,7 +190,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           ></textarea>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="notes">
             Observações
           </label>
@@ -192,7 +203,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           ></textarea>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="dateIssued">
             Data de Emissão
           </label>
@@ -206,6 +217,7 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
           />
         </div>
 
+        {/* Último campo mantém mb-6 para o espaçamento antes do botão */}
         <div className="mb-6">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="status">
             Status

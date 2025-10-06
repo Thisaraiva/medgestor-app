@@ -1,41 +1,26 @@
-require('dotenv').config();
+// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\config\database.js
+
+// Nota: require('dotenv').config() não é necessário aqui se já estiver
+// em config.js e se a aplicação for inicializada com as variáveis do .env
+// No entanto, para segurança, mantê-lo ou depender do ambiente é ok.
+// Vamos manter o padrão de carregar o config.js para garantir que o dotenv seja lido.
+
 const { Sequelize } = require('sequelize');
+const cliConfig = require('./config'); // Carrega as configurações do CLI
 
 const env = process.env.NODE_ENV || 'development';
 
-const config = {
-  development: {
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'medgestor',
-    host: process.env.DB_HOST || 'db',
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
-    dialect: 'postgres',
-  },
-  test: {
-    // Certifique-se que estas variáveis são passadas no CI/CD para 'localhost:5433'
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME_TEST || 'medgestor_test',
-    host: process.env.DB_HOST_TEST || 'db_test', // No GitHub Actions, será sobrescrito para 'localhost'
-    port: parseInt(process.env.DB_PORT_TEST, 10) || 5432, // No GitHub Actions, será sobrescrito para '5433'
-    dialect: 'postgres',
-  },
-  production: {
-    username: process.env.DB_USER_PROD || 'postgres',
-    password: process.env.DB_PASSWORD_PROD || 'postgres',
-    database: process.env.DB_NAME_PROD || 'medgestor_prod',
-    host: process.env.DB_HOST_PROD || 'db_prod',
-    port: parseInt(process.env.DB_PORT_PROD, 10) || 5432,
-    dialect: 'postgres',
-  },
-}[env];
+// Carrega a configuração específica do ambiente
+const config = cliConfig[env];
 
+// Garante que o port seja um número se estiver sendo lido como string
+config.port = parseInt(config.port, 10);
 
 if (!config.database || !config.username || !config.host) {
   throw new Error('Missing required database configuration');
 }
 
+// Configuração extra específica para o ORM (que não está no config.js)
 const sequelize = new Sequelize(config.database, config.username, config.password, {
   host: config.host,
   port: config.port,

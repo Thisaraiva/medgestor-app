@@ -219,14 +219,8 @@ const PatientList = () => {
 
         {/* Mensagens de Ação (Sucesso/Erro) */}
         {actionMessage && (
-          <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isActionError ? 'bg-error text-white' : 'bg-success text-white'}`}>
-            {/* Adicionando um botão de fechar para o usuário não precisar esperar */}
-            <div className="flex justify-between items-center">
-              <span>{actionMessage}</span>
-              <button onClick={() => setActionMessage('')} className="ml-4 font-bold">
-                X
-              </button>
-            </div>
+           <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isActionError ? 'bg-error text-white' : 'bg-success text-white'}`}>
+            {actionMessage}
           </div>
         )}
 

@@ -26,6 +26,12 @@ const Login = () => {
       setMessage(errorMessage);
       setIsError(true);
       console.error('Erro de login:', err);
+
+      // NOVO: Configura um timer para limpar a mensagem após 5 segundos (5000ms)
+      setTimeout(() => {
+        setMessage('');
+        setIsError(false);
+      }, 5000);
     }
   };
 
@@ -91,6 +97,6 @@ const Login = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Login;
