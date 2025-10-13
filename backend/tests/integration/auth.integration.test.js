@@ -8,7 +8,7 @@ const { User } = require('../../models');
 const testUserData = {
     name: "Admin Teste",
     email: "admin.test@medgestor.com",
-    password: "securePassword123",
+    password: "Password123",
     role: "admin",
     // CRM não é necessário para admin, mas se fosse doctor, precisaria.
 };

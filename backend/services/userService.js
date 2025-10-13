@@ -1,84 +1,75 @@
-// backend/services/userService.js
+// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\services\userService.js (COMPLETO)
 
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
+const { NotFoundError } = require('../errors/errors');
+
+/**
+ * Função utilitária interna para atualizar os campos do usuário. (DRY)
+ * @param {object} user - Instância do modelo Sequelize.
+ * @param {object} userData - Dados para atualização.
+ */
+const updateFields = async (user, userData) => {
+    user.name = userData.name || user.name;
+    user.email = userData.email || user.email;
+    
+    if (userData.password) {
+        // O hook beforeSave no modelo User fará o hash
+        user.password = userData.password; 
+    }
+    
+    // O CRM/Role só deve ser atualizado se o campo estiver presente
+    if (Object.prototype.hasOwnProperty.call(userData, 'role')) {
+        user.role = userData.role;
+    }
+    if (Object.prototype.hasOwnProperty.call(userData, 'crm')) {
+        user.crm = userData.crm;
+    }
+
+    await user.save();
+    return User.findByPk(user.id, { attributes: { exclude: ['password'] } });
+};
 
 const userService = {
-  /**
-   * Busca todos os usuários.
-   * @returns {Promise<Array<object>>} - Lista de usuários.
-   */
+  
   getAllUsers: async () => {
     return User.findAll({ attributes: { exclude: ['password'] } });
   },
 
-  /**
-   * Busca um usuário por ID.
-   * @param {string} id - ID do usuário.
-   * @returns {Promise<object>} - O usuário encontrado.
-   */
   getUserById: async (id) => {
     return User.findByPk(id, { attributes: { exclude: ['password'] } });
   },
 
-  /**
-   * Atualiza um usuário.
-   * @param {string} id - ID do usuário a ser atualizado.
-   * @param {object} userData - Dados para atualização.
-   * @returns {Promise<object>} - O usuário atualizado.
-   */
   updateUser: async (id, userData) => {
     const user = await User.findByPk(id);
     if (!user) {
-      throw new Error('Usuário não encontrado.');
+      throw new NotFoundError('Usuário não encontrado.');
     }
 
-    user.name = userData.name || user.name;
-    user.email = userData.email || user.email;
-    user.role = userData.role || user.role;
-
-    if (userData.password) {
-      user.password = await bcrypt.hash(userData.password, 10);
-    }
-
-    await user.save();
-    return User.findByPk(id, { attributes: { exclude: ['password'] } });
+    // Chamada à função utilitária para manter DRY
+    return updateFields(user, userData);
   },
 
-  /**
-   * Exclui um usuário.
-   * @param {string} id - ID do usuário a ser excluído.
-   * @returns {Promise<void>}
-   */
   deleteUser: async (id) => {
     const user = await User.findByPk(id);
     if (!user) {
-      throw new Error('Usuário não encontrado.');
+      throw new NotFoundError('Usuário não encontrado.');
     }
     await user.destroy();
   },
 
-  /**
-   * Atualiza o próprio perfil do usuário.
-   * @param {string} id - ID do usuário (deve ser o ID do usuário logado).
-   * @param {object} userData - Dados para atualização (name, email, password).
-   * @returns {Promise<object>} - O perfil atualizado.
-   */
   updateMyProfile: async (id, userData) => {
     const user = await User.findByPk(id);
     if (!user) {
-      throw new Error('Usuário não encontrado.');
+      throw new NotFoundError('Usuário não encontrado.');
     }
 
-    user.name = userData.name || user.name;
-    user.email = userData.email || user.email;
+    // Remove role/crm para garantir que o usuário não mude o próprio papel/crm nesta rota
+    const sanitizedData = { ...userData };
+    delete sanitizedData.role; 
+    delete sanitizedData.crm;
 
-    if (userData.password) {
-      user.password = await bcrypt.hash(userData.password, 10);
-    }
-
-    await user.save();
-    return User.findByPk(id, { attributes: { exclude: ['password'] } });
+    // Chamada à função utilitária para manter DRY
+    return updateFields(user, sanitizedData);
   }
 };
 

@@ -1,22 +1,20 @@
-// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\middleware/__mocks__/authMiddleware.js
-
-/**
- * MOCK do authMiddleware para Testes de Integração
- *
- * Objetivo: Ignorar a verificação real do JWT e simular a autenticação
- * injetando um usuário de teste na requisição (req.user).
- *
- * Isso garante que a Rota/Controller seja testada, enquanto a lógica
- * de JWT é testada separadamente em testes unitários.
- */
+// C:\Programacao\Projetos\JavaScript\medgestor-app\backend\middleware\__mocks__\authMiddleware.js
 
 // Usamos os dados globais definidos em test_setup.js
-const testUser = global.testAuthUser || { id: 9999, role: 'doctor', name: 'Test User' }; 
+const testUser = global.testAuthUser || { id: 9999, role: 'doctor', name: 'Test User' };
 
 // 1. Mock do authMiddleware
 const authMiddleware = (req, res, next) => {
-  // Simula o usuário autenticado, ignorando a verificação do token
-  req.user = testUser; 
+  // **CORREÇÃO: Verificamos se o Authorization header está presente**
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    // Se não houver token, simulamos a falha 401 do middleware real (DRY/Single Responsibility)
+    return res.status(401).json({ error: 'Acesso negado, token não fornecido' });
+  }
+
+  // Se o token estiver presente (em qualquer formato), simula o sucesso da autenticação
+  req.user = testUser;
   next();
 };
 

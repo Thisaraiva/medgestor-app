@@ -1,10 +1,14 @@
 const { v4: uuidv4 } = require('uuid');
 const { faker } = require('@faker-js/faker');
-const moment = require('moment'); // Adicionado moment para gerar datas de nascimento
+const moment = require('moment'); 
+
+const JANE_DOE_PATIENT_ID = '11111111-1111-4111-9111-111111111111'; // ID fixo para Jane Doe (Padrão do Seed)
 
 module.exports = {
+  JANE_DOE_PATIENT_ID, // Exportar o ID fixo (DRY)
+
   up: async (queryInterface) => {
-    // Função para gerar CPF válido (mantida a lógica como no seu código original)
+    // ... (Funções generateValidCPF e generateDateOfBirth inalteradas) ...
     function generateValidCPF() {
       const digits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
       const calculateCheckDigit = (digits, start, length) => {
@@ -21,19 +25,17 @@ module.exports = {
       return `${cpfRaw.slice(0, 3)}.${cpfRaw.slice(3, 6)}.${cpfRaw.slice(6, 9)}-${cpfRaw.slice(9, 11)}`;
     }
 
-    // Função auxiliar para gerar uma data de nascimento válida (AAAA-MM-DD)
     const generateDateOfBirth = () => {
-      // Gera uma data entre 18 e 90 anos atrás
       const date = faker.date.past({ years: 90, refDate: moment().subtract(18, 'years').toDate() });
       return moment(date).format('YYYY-MM-DD');
     };
 
     const patients = [
       {
-        id: uuidv4(),
+        id: JANE_DOE_PATIENT_ID, // UUID Fixo
         name: 'Jane Doe',
-        cpf: '123.456.789-09', // CPF válido
-        dateOfBirth: '1990-05-15', // Exemplo de data de nascimento
+        cpf: '123.456.789-09',
+        dateOfBirth: '1990-05-15',
         email: 'patient@medgestor.com',
         phone: '(11) 91234-5678',
         allergies: null,
@@ -44,7 +46,7 @@ module.exports = {
         id: uuidv4(),
         name: faker.person.fullName(),
         cpf: generateValidCPF(),
-        dateOfBirth: generateDateOfBirth(), // Data de nascimento aleatória
+        dateOfBirth: generateDateOfBirth(),
         email: faker.internet.email(),
         phone: faker.phone.number('(##) #####-####'),
         allergies: faker.helpers.arrayElement(['Penicilina', 'Amendoim', 'Látex', null]),
