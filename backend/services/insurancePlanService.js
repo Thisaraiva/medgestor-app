@@ -43,7 +43,7 @@ const getAllInsurancePlans = async () => {
 const getActiveInsurancePlans = async () => {
   return InsurancePlan.findAll({
     where: { isActive: true },
-    attributes: ['id', 'name', 'description'],
+    attributes: ['id', 'name', 'description', 'isActive'],
     order: [['name', 'ASC']],
   });
 };
