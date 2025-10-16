@@ -85,7 +85,8 @@ beforeAll(async () => {
         console.error(error.message);
         throw new Error('Falha no setup do ambiente de teste. Verifique a conexão com o DB e as migrações.');
     }
-});
+},15000);
+
 afterAll(async () => {
     console.log('\n[TEST TEARDOWN] Fechando conexão com o Banco de Dados de Teste...');
     await sequelize.close();
