@@ -1,533 +1,298 @@
-/*// Arquivo: C:\Programacao\Projetos\JavaScript\medgestor-app\backend\tests\integration\appointment.integration.test.js
-
 const request = require('supertest');
-const { createTestServer } = require('../test_setup');
-const { sequelize, User, Patient, Appointment } = require('../../models');
+const app = require('../../server');
+const { Appointment, User, /*Patient,*/ InsurancePlan } = require('../../models');
 const { generateToken } = require('../../utils/jwt');
-const { sendAppointmentConfirmation } = require('../../utils/email');
-const { v4: uuidv4 } = require('uuid');
-const bcryptjs = require('bcryptjs');
-const { parse, format, addDays, setHours, setMinutes } = require('date-fns');
-const { zonedTimeToUtc } = require('date-fns-tz');
-const { ptBR } = require('date-fns/locale');
+const moment = require('moment-timezone');
 
-jest.mock('../../utils/email');
-jest.setTimeout(10000); // Aumentado um pouco para dar mais folga
+// Mock do email para evitar falhas reais em testes
+jest.mock('../../utils/email', () => ({
+  sendAppointmentConfirmation: jest.fn().mockResolvedValue(undefined),
+}));
 
-// Define o fuso horário da aplicação para consistência nos testes
-const APP_TIMEZONE = 'America/Sao_Paulo';
+const doctorAuthToken = global.testAuthToken; // Token do Doctor logado (global de test_setup)
+const doctorId = global.testAuthUser.id; // ID do Doctor (global)
+const testPatientId = global.testPatientId; // ID do Patient seed (global)
 
-// Função para gerar um CPF válido (simplificado para testes)
-// Esta função gera um CPF válido de acordo com as regras de dígitos verificadores
-const generateValidCpf = () => {
-    const randomNineDigits = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
-
-    // Calcula o primeiro dígito verificador
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-        sum += randomNineDigits[i] * (10 - i);
-    }
-    let d1 = 11 - (sum % 11);
-    d1 = d1 > 9 ? 0 : d1;
-
-    // Calcula o segundo dígito verificador
-    sum = 0;
-    for (let i = 0; i < 9; i++) {
-        sum += randomNineDigits[i] * (11 - i);
-    }
-    sum += d1 * 2;
-    let d2 = 11 - (sum % 11);
-    d2 = d2 > 9 ? 0 : d2;
-
-    const cpfArray = [...randomNineDigits, d1, d2];
-    return `${cpfArray[0]}${cpfArray[1]}${cpfArray[2]}.${cpfArray[3]}${cpfArray[4]}${cpfArray[5]}.${cpfArray[6]}${cpfArray[7]}${cpfArray[8]}-${cpfArray[9]}${cpfArray[10]}`;
+const secretaryData = {
+  name: 'Test Secretary',
+  email: 'test.secretary@medgestor.com',
+  password: 'password123',
+  role: 'secretary',
+  crm: null,
 };
 
+const newAppointmentData = {
+  doctorId: doctorId,
+  patientId: testPatientId,
+  date: moment.utc().add(1, 'days').set({ hour: 10, minute: 0 }).toISOString(), // Futura
+  type: 'initial',
+  insurance: false,
+  insurancePlanId: null,
+};
 
-describe('Appointment Integration Tests', () => {
-    let app;
-    let adminToken;
-    let doctorId;
-    let patientId;
-    let adminUser;
-    let doctorUser;
-    let patientObj;
+// Variáveis que serão preenchidas
+let secretaryUser;
+let secretaryToken;
+let newAppointmentId;
+let testInsurancePlanId;
 
-    beforeAll(async () => {
-        jest.setTimeout(20000); // Aumentado o timeout do beforeAll
+describe('Appointment API Endpoints', () => {
 
-        app = createTestServer();
+  beforeAll(async () => {
+    secretaryUser = await User.create(secretaryData);
+    secretaryToken = generateToken({ id: secretaryUser.id, role: secretaryUser.role });
 
-        const adminPassword = await bcryptjs.hash('adminpass', 10);
-        adminUser = await User.create({
-            id: uuidv4(),
-            name: 'Test Admin',
-            email: 'testadmin@medgestor.com',
-            password: adminPassword,
-            role: 'admin',
-            crm: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
-        adminToken = generateToken({ id: adminUser.id, role: adminUser.role });
+    // Criar um insurancePlan temp para testes com insurance true
+    const testPlan = await InsurancePlan.create({
+      name: 'Test Plan for Appointment',
+      description: 'Temp plan',
+      isActive: true,
+    });
+    testInsurancePlanId = testPlan.id;
+  });
 
-        const doctorPassword = await bcryptjs.hash('doctorpass', 10);
-        doctorUser = await User.create({
-            id: uuidv4(),
-            name: 'Dr. Test Integration',
-            email: 'drtestintegration@medgestor.com',
-            password: doctorPassword,
-            role: 'doctor',
-            crm: 'CRM/SP-123456',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
-        doctorId = doctorUser.id;
+  afterAll(async () => {
+    await User.destroy({ where: { id: secretaryUser.id }, cascade: true });
+    await InsurancePlan.destroy({ where: { id: testInsurancePlanId }, cascade: true });
+  });
 
-        patientObj = await Patient.create({
-            id: uuidv4(),
-            name: 'Patient Test Integration',
-            cpf: generateValidCpf(), // GERANDO UM CPF VÁLIDO AGORA
-            email: 'patienttestintegration@medgestor.com',
-            phone: '11999998888',
-            allergies: 'None',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
-        patientId = patientObj.id;
+  beforeEach(async () => {
+    const newAppointment = await Appointment.create(newAppointmentData);
+    newAppointmentId = newAppointment.id;
+  });
 
-    }, 20000);
+  afterEach(async () => {
+    await Appointment.destroy({ where: { id: newAppointmentId }, cascade: true });
+  });
 
-    beforeEach(async () => {
-        await Appointment.destroy({ where: {} });
-        sendAppointmentConfirmation.mockReset();
-        sendAppointmentConfirmation.mockResolvedValue();
+  // 1. Testes de Leitura (GET /api/appointments e /:id)
+  describe('GET /api/appointments', () => {
+    test('Deve listar todos os agendamentos com sucesso (Secretary - todos)', async () => {
+      const response = await request(app)
+        .get('/api/appointments')
+        .set('Authorization', `Bearer ${secretaryToken}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThanOrEqual(1); // Seeds + teste
+      expect(response.body.some(a => a.type === newAppointmentData.type)).toBe(true);
     });
 
-    afterAll(async () => {
-        await Appointment.destroy({ where: {} });
-        if (patientObj && patientObj.id) {
-            await Patient.destroy({ where: { id: patientObj.id } });
-        }
-        if (doctorUser && doctorUser.id) {
-            await User.destroy({ where: { id: doctorUser.id } });
-        }
-        if (adminUser && adminUser.id) {
-            await User.destroy({ where: { id: adminUser.id } });
-        }
-        await sequelize.close();
+    test('Doctor deve listar apenas seus próprios agendamentos', async () => {
+      const response = await request(app)
+        .get('/api/appointments')
+        .set('Authorization', `Bearer ${doctorAuthToken}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.every(a => a.doctor.id === doctorId)).toBe(true);
     });
 
-    // Helper para gerar uma data futura formatada
-    const generateFutureFormattedDate = (daysToAdd = 7, hours = 10, minutes = 0) => {
-        let futureDate = addDays(new Date(), daysToAdd);
-        futureDate = setHours(futureDate, hours);
-        futureDate = setMinutes(futureDate, minutes);
-        return format(futureDate, 'dd/MM/yyyy HH:mm', { locale: ptBR });
-    };
+    test('Deve filtrar por data com sucesso', async () => {
+      const startDate = moment.utc().toISOString();
+      const endDate = moment.utc().add(7, 'days').toISOString();
 
-    // Helper para converter a string de data formatada para um objeto Date em UTC
-    const convertFormattedDateToUtc = (formattedDate) => {
-        const parsedDate = parse(formattedDate, 'dd/MM/yyyy HH:mm', new Date(), { locale: ptBR });
-        return zonedTimeToUtc(parsedDate, APP_TIMEZONE);
-    };
+      const response = await request(app)
+        .get('/api/appointments')
+        .query({ startDate, endDate })
+        .set('Authorization', `Bearer ${secretaryToken}`);
 
-    describe('POST /api/appointments', () => {
-        it('should create an appointment successfully and send email', async () => {
-            const appointmentDate = generateFutureFormattedDate(7, 10, 0);
+      expect(response.statusCode).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+  });
 
-            const response = await request(app)
-                .post('/api/appointments')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    doctorId,
-                    patientId,
-                    date: appointmentDate,
-                    type: 'initial',
-                    insurance: true,
-                });
+  describe('GET /api/appointments/:id', () => {
+    test('Deve retornar um agendamento por ID com sucesso', async () => {
+      const response = await request(app)
+        .get(`/api/appointments/${newAppointmentId}`)
+        .set('Authorization', `Bearer ${doctorAuthToken}`);
 
-            // If the CPF validation was the only issue, this should now be 201
-            // If it's still 400, check the response.body.error for new validation messages
-            expect(response.status).toBe(201);
-            expect(response.body).toHaveProperty('id');
-            expect(response.body.date).toBe(appointmentDate);
-            expect(response.body.doctorId).toBe(doctorId);
-            expect(response.body.patientId).toBe(patientId);
-            expect(sendAppointmentConfirmation).toHaveBeenCalled();
-        });
-
-        it('should return 400 for invalid date format', async () => {
-            const response = await request(app)
-                .post('/api/appointments')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    doctorId,
-                    patientId,
-                    date: 'invalid-date',
-                    type: 'initial',
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(400);
-            // Updated expectation based on your error output
-            expect(response.body.error).toBe('Data deve estar no formato dd/MM/yyyy HH:mm');
-            expect(sendAppointmentConfirmation).not.toHaveBeenCalled();
-        });
-
-        it('should return 400 for past date', async () => {
-            const pastDate = format(addDays(new Date(), -1), 'dd/MM/yyyy HH:mm', { locale: ptBR });
-
-            const response = await request(app)
-                .post('/api/appointments')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    doctorId,
-                    patientId,
-                    date: pastDate,
-                    type: 'initial',
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(400);
-            // Updated expectation based on your error output (this might still be 'Acesso negado' if middleware order is specific)
-            expect(response.body.error).toBe('Data deve ser futura');
-            expect(sendAppointmentConfirmation).not.toHaveBeenCalled();
-        });
-
-        it('should return 401 for unauthorized access', async () => {
-            const appointmentDate = generateFutureFormattedDate(7, 10, 0);
-            const response = await request(app)
-                .post('/api/appointments')
-                .send({
-                    doctorId,
-                    patientId,
-                    date: appointmentDate,
-                    type: 'initial',
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(401);
-            expect(response.body.error).toBe('Acesso negado, token não fornecido');
-            expect(sendAppointmentConfirmation).not.toHaveBeenCalled();
-        });
-
-        it('should return 400 for invalid UUID', async () => {
-            const appointmentDate = generateFutureFormattedDate(7, 10, 0);
-            const response = await request(app)
-                .post('/api/appointments')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    doctorId: 'invalid-uuid',
-                    patientId,
-                    date: appointmentDate,
-                    type: 'initial',
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(400);
-            // Updated expectation based on your error output
-            expect(response.body.error).toBe('"doctorId" must be a valid GUID');
-            expect(sendAppointmentConfirmation).not.toHaveBeenCalled();
-        });
-
-        it('should return 400 for conflicting appointment', async () => {
-            const conflictDateFormatted = generateFutureFormattedDate(7, 10, 0);
-            const conflictDateUtc = convertFormattedDateToUtc(conflictDateFormatted);
-
-            await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: conflictDateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-
-            const response = await request(app)
-                .post('/api/appointments')
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    doctorId,
-                    patientId,
-                    date: conflictDateFormatted,
-                    type: 'initial',
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(400);
-            expect(response.body.error).toBe('Médico já está agendado neste horário');
-            expect(sendAppointmentConfirmation).not.toHaveBeenCalled();
-        });
+      expect(response.statusCode).toBe(200);
+      expect(response.body.id).toBe(newAppointmentId);
+      expect(response.body.type).toBe(newAppointmentData.type);
     });
 
-    describe('GET /api/appointments', () => {
-        it('should return a list of appointments', async () => {
-            const appointmentDate1Formatted = generateFutureFormattedDate(8, 10, 0);
-            const appointmentDate1Utc = convertFormattedDateToUtc(appointmentDate1Formatted);
+    test('Deve retornar 404 para ID inválido', async () => {
+      const response = await request(app)
+        .get('/api/appointments/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${doctorAuthToken}`);
 
-            await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: appointmentDate1Utc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
+      expect(response.statusCode).toBe(404);
+      expect(response.body.error).toBe('Consulta não encontrada.');
+    });
+  });
 
-            const response = await request(app)
-                .get('/api/appointments')
-                .set('Authorization', `Bearer ${adminToken}`);
+  // 2. Testes de Criação (POST /api/appointments)
+  describe('POST /api/appointments', () => {
+    test('Deve criar um novo agendamento sem seguro com sucesso', async () => {
+      const createData = {
+        doctorId: doctorId,
+        patientId: testPatientId,
+        date: moment.utc().add(2, 'days').set({ hour: 11, minute: 0 }).toISOString(),
+        type: 'return',
+        insurance: false,
+        insurancePlanId: null,
+      };
 
-            expect(response.status).toBe(200);
-            expect(response.body).toBeInstanceOf(Array);
-            expect(response.body.length).toBeGreaterThan(0);
-            expect(response.body[0].date).toBe(appointmentDate1Formatted);
-        });
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(createData);
 
-        it('should return filtered appointments', async () => {
-            const appointmentDate1Formatted = generateFutureFormattedDate(9, 9, 0);
-            const appointmentDate1Utc = convertFormattedDateToUtc(appointmentDate1Formatted);
+      expect(response.statusCode).toBe(201);
+      expect(response.body.type).toBe(createData.type);
 
-            const appointmentDate2Formatted = generateFutureFormattedDate(9, 10, 0);
-            const appointmentDate2Utc = convertFormattedDateToUtc(appointmentDate2Formatted);
-
-            await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: appointmentDate1Utc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-
-            const anotherPatient = await Patient.create({
-                id: uuidv4(), name: 'Another Patient', cpf: generateValidCpf(), email: 'another@example.com', phone: '11999991111',
-                createdAt: new Date(), updatedAt: new Date(),
-            });
-
-            await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId: anotherPatient.id,
-                date: appointmentDate2Utc,
-                type: 'return',
-                insurance: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-
-
-            const response = await request(app)
-                .get(`/api/appointments?type=initial&doctorId=${doctorId}`)
-                .set('Authorization', `Bearer ${adminToken}`);
-
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(1);
-            expect(response.body[0].type).toBe('initial');
-            expect(response.body[0].doctorId).toBe(doctorId);
-
-            if (anotherPatient && anotherPatient.id) {
-                await Patient.destroy({ where: { id: anotherPatient.id } });
-            }
-        });
+      // Limpeza
+      await Appointment.destroy({ where: { id: response.body.id } });
     });
 
-    describe('GET /api/appointments/:id', () => {
-        it('should return an appointment by ID', async () => {
-            const appointmentDateFormatted = generateFutureFormattedDate(10, 10, 0);
-            const appointmentDateUtc = convertFormattedDateToUtc(appointmentDateFormatted);
+    test('Deve criar um agendamento com seguro com sucesso', async () => {
+      const createData = {
+        doctorId: doctorId,
+        patientId: testPatientId,
+        date: moment.utc().add(3, 'days').set({ hour: 12, minute: 0 }).toISOString(),
+        type: 'initial',
+        insurance: true,
+        insurancePlanId: testInsurancePlanId,
+      };
 
-            const appointment = await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: appointmentDateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(createData);
 
-            const response = await request(app)
-                .get(`/api/appointments/${appointment.id}`)
-                .set('Authorization', `Bearer ${adminToken}`);
+      expect(response.statusCode).toBe(201);
+      expect(response.body.insurance).toBe(true);
 
-            expect(response.status).toBe(200);
-            expect(response.body.id).toBe(appointment.id);
-            expect(response.body.date).toBe(appointmentDateFormatted);
-        });
-
-        it('should return 400 for invalid UUID', async () => {
-            const response = await request(app)
-                .get('/api/appointments/invalid-id')
-                .set('Authorization', `Bearer ${adminToken}`);
-
-            expect(response.status).toBe(400);
-            // Updated expectation based on your error output
-            expect(response.body.error).toBe('"id" must be a valid GUID'); // Assuming 'id' is the param name
-        });
-
-        it('should return 404 for non-existent appointment', async () => {
-            const response = await request(app)
-                .get(`/api/appointments/${uuidv4()}`)
-                .set('Authorization', `Bearer ${adminToken}`);
-
-            expect(response.status).toBe(404);
-            expect(response.body.error).toBe('Consulta não encontrada');
-        });
+      // Limpeza
+      await Appointment.destroy({ where: { id: response.body.id } });
     });
 
-    describe('PUT /api/appointments/:id', () => {
-        it('should update an appointment successfully', async () => {
-            const initialDateFormatted = generateFutureFormattedDate(11, 9, 0);
-            const initialDateUtc = convertFormattedDateToUtc(initialDateFormatted);
+    test('Deve retornar 400 para data passada', async () => {
+      const createData = {
+        ...newAppointmentData,
+        date: moment.utc().subtract(1, 'days').toISOString(),
+      };
 
-            const appointment = await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: initialDateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(createData);
 
-            const updatedDateFormatted = generateFutureFormattedDate(12, 11, 0);
-
-            const response = await request(app)
-                .put(`/api/appointments/${appointment.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    type: 'return',
-                    date: updatedDateFormatted,
-                    doctorId,
-                    patientId,
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(200);
-            expect(response.body.type).toBe('return');
-            expect(response.body.date).toBe(updatedDateFormatted);
-        });
-
-        it('should return 400 for invalid date format', async () => {
-            const initialDateFormatted = generateFutureFormattedDate(11, 9, 0);
-            const initialDateUtc = convertFormattedDateToUtc(initialDateFormatted);
-
-            const appointment = await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: initialDateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-
-            const response = await request(app)
-                .put(`/api/appointments/${appointment.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    type: 'return',
-                    date: 'invalid-date',
-                    doctorId,
-                    patientId,
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(400);
-            // Updated expectation
-            expect(response.body.error).toBe('Data deve estar no formato dd/MM/yyyy HH:mm');
-        });
-
-        it('should return 400 for conflicting appointment', async () => {
-            const appointment1DateFormatted = generateFutureFormattedDate(13, 10, 0);
-            const appointment1DateUtc = convertFormattedDateToUtc(appointment1DateFormatted);
-
-            const appointment2DateFormatted = generateFutureFormattedDate(13, 11, 0);
-            const appointment2DateUtc = convertFormattedDateToUtc(appointment2DateFormatted);
-
-
-            const appointment = await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: appointment1DateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-
-            await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId: patientId,
-                date: appointment2DateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-
-            const response = await request(app)
-                .put(`/api/appointments/${appointment.id}`)
-                .set('Authorization', `Bearer ${adminToken}`)
-                .send({
-                    type: 'return',
-                    date: appointment2DateFormatted,
-                    doctorId,
-                    patientId,
-                    insurance: true,
-                });
-
-            expect(response.status).toBe(400);
-            expect(response.body.error).toBe('Médico já está agendado neste horário');
-        });
+      expect(response.statusCode).toBe(400);
+      expect(response.body.error).toContain('data e hora da consulta devem ser futuras');
     });
 
-    describe('DELETE /api/appointments/:id', () => {
-        it('should delete an appointment successfully', async () => {
-            const appointmentDateFormatted = generateFutureFormattedDate(14, 10, 0);
-            const appointmentDateUtc = convertFormattedDateToUtc(appointmentDateFormatted);
+    test('Deve retornar 400 para conflito de horário', async () => {
+      const createData = {
+        ...newAppointmentData,
+        date: newAppointmentData.date, // Mesma hora do existing no beforeEach
+      };
 
-            const appointment = await Appointment.create({
-                id: uuidv4(),
-                doctorId,
-                patientId,
-                date: appointmentDateUtc,
-                type: 'initial',
-                insurance: true,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(createData);
 
-            const response = await request(app)
-                .delete(`/api/appointments/${appointment.id}`)
-                .set('Authorization', `Bearer ${adminToken}`);
-
-            expect(response.status).toBe(204);
-            const deleted = await Appointment.findByPk(appointment.id);
-            expect(deleted).toBeNull();
-        });
-
-        it('should return 404 for non-existent appointment', async () => {
-            const response = await request(app)
-                .delete(`/api/appointments/${uuidv4()}`)
-                .set('Authorization', `Bearer ${adminToken}`);
-
-            expect(response.status).toBe(404);
-            expect(response.body.error).toBe('Consulta não encontrada');
-        });
+      expect(response.statusCode).toBe(400);
+      expect(response.body.error).toContain('Médico já possui um agendamento neste horário');
     });
+
+    test('Deve retornar 404 para doctor inexistente', async () => {
+      const createData = {
+        ...newAppointmentData,
+        doctorId: '00000000-0000-0000-0000-000000000000',
+      };
+
+      const response = await request(app)
+        .post('/api/appointments')
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(createData);
+
+      expect(response.statusCode).toBe(404);
+      expect(response.body.error).toContain('Médico não encontrado');
+    });
+  });
+
+  // 3. Testes de Atualização (PUT /api/appointments/:id)
+  describe('PUT /api/appointments/:id', () => {
+    test('Deve atualizar um agendamento com sucesso', async () => {
+      const updateData = {
+        type: 'return',
+        insurance: true,
+        insurancePlanId: testInsurancePlanId,
+      };
+
+      const response = await request(app)
+        .put(`/api/appointments/${newAppointmentId}`)
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(updateData);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.type).toBe(updateData.type);
+      expect(response.body.insurance).toBe(true);
+    });
+
+    test('Deve retornar 400 para conflito de horário em update', async () => {
+      // Criar um conflito temp
+      const conflictData = {
+        doctorId: doctorId,
+        patientId: testPatientId,
+        date: moment.utc().add(4, 'days').set({ hour: 13, minute: 0 }).toISOString(),
+        type: 'initial',
+        insurance: false,
+      };
+      const conflictAppointment = await Appointment.create(conflictData);
+
+      const updateData = {
+        date: conflictData.date, // Conflito
+      };
+
+      const response = await request(app)
+        .put(`/api/appointments/${newAppointmentId}`)
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(updateData);
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.error).toContain('Médico já possui um agendamento neste horário');
+
+      // Limpeza
+      await Appointment.destroy({ where: { id: conflictAppointment.id } });
+    });
+
+    test('Deve retornar 404 para ID inválido', async () => {
+      const updateData = { type: 'return' }; // Type válido
+
+      const response = await request(app)
+        .put('/api/appointments/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${secretaryToken}`)
+        .send(updateData);
+
+      expect(response.statusCode).toBe(404);
+      expect(response.body.error).toBe('Consulta não encontrada.');
+    });
+  });
+
+  // 4. Testes de Exclusão (DELETE /api/appointments/:id)
+  describe('DELETE /api/appointments/:id', () => {
+    test('Deve excluir um agendamento com sucesso', async () => {
+      const response = await request(app)
+        .delete(`/api/appointments/${newAppointmentId}`)
+        .set('Authorization', `Bearer ${secretaryToken}`);
+
+      expect(response.statusCode).toBe(204);
+
+      const check = await Appointment.findByPk(newAppointmentId);
+      expect(check).toBeNull();
+    });
+
+    test('Deve retornar 404 para ID inválido', async () => {
+      const response = await request(app)
+        .delete('/api/appointments/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${secretaryToken}`);
+
+      expect(response.statusCode).toBe(404);
+      expect(response.body.error).toBe('Consulta não encontrada.');
+    });
+  });
 });
-*/
