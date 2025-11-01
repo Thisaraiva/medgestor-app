@@ -157,10 +157,10 @@ describe('Prescription API Endpoints', () => {
         });
 
         test('Deve retornar 404 se a prescrição não for encontrada', async () => {
-            const nonExistentId = '99999999-0000-0000-0000-000000000000';
+            const nonExistentId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
             const response = await request(app)
                 .get(`/api/prescriptions/${nonExistentId}`)
-                .set('Authorization', `Bearer ${authToken}`);
+                .set('Authorization', `Bearer ${global.testAuthToken}`);
 
             expect(response.statusCode).toBe(404);
             expect(response.body.error).toBe('Prescrição não encontrada');
