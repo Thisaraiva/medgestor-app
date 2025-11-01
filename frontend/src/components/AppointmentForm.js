@@ -2,23 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import appointmentService from '../services/appointmentService';
-import authService from '../services/authService'; // To fetch doctors
-import patientService from '../services/patientService'; // To fetch patients
-import insurancePlanService from '../services/insurancePlanService'; // NEW: To fetch insurance plans
-import moment from 'moment'; // Importa Moment.js
+import authService from '../services/authService';
+import patientService from '../services/patientService';
+import insurancePlanService from '../services/insurancePlanService';
+import moment from 'moment';
 
-/**
- * Form component for adding or editing appointments.
- *
- * @param {object} props - Component properties.
- * @param {object} [props.appointment] - Appointment object for editing. If null, it's an add form.
- * @param {function} props.onSubmit - Function to be called after successful submission.
- */
 const AppointmentForm = ({ appointment, onSubmit }) => {
   const [doctorId, setDoctorId] = useState('');
   const [patientId, setPatientId] = useState('');
-  const [selectedDate, setSelectedDate] = useState(''); // State for date input (YYYY-MM-DD)
-  const [selectedTime, setSelectedTime] = useState(''); // State for time input (HH:mm)
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
   const [type, setType] = useState('initial');
   const [insurance, setInsurance] = useState(false);
   const [insurancePlanId, setInsurancePlanId] = useState('');
@@ -30,7 +23,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [formLoading, setFormLoading] = useState(true);
 
-  // Effect to fetch dropdown data (doctors, patients, insurance plans)
+  // Carregar dados dos dropdowns
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
@@ -42,10 +35,9 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
         const insurancePlansResponse = await insurancePlanService.getAllActiveInsurancePlans();
         setInsurancePlans(insurancePlansResponse.data);
-
       } catch (err) {
-        console.error('Error loading data for dropdowns:', err);
-        setMessage('Error loading doctors, patients, or insurance plans.');
+        console.error('Erro ao carregar dados:', err);
+        setMessage('Erro ao carregar médicos, pacientes ou planos.');
         setIsError(true);
       } finally {
         setFormLoading(false);
@@ -54,7 +46,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     fetchDropdownData();
   }, []);
 
-  // Populates the form if an appointment is passed for editing
+  // Preencher formulário ao editar
   useEffect(() => {
     if (appointment) {
       setDoctorId(appointment.doctorId || '');
@@ -63,21 +55,17 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       setInsurance(appointment.insurance || false);
       setInsurancePlanId(appointment.insurancePlanId || '');
 
-      // Populate date and time fields separately from backend's formatted date
       if (appointment.dateOnly && appointment.timeOnly) {
-        setSelectedDate(appointment.dateOnly); // YYYY-MM-DD
-        setSelectedTime(appointment.timeOnly); // HH:mm
+        setSelectedDate(appointment.dateOnly);
+        setSelectedTime(appointment.timeOnly);
       } else if (appointment.date) {
-        // Fallback if dateOnly/timeOnly are not provided by backend (older data)
-        // This assumes appointment.date is in 'DD/MM/YYYY HH:mm' format from backend
-        const parsed = moment(appointment.date, 'DD/MM/YYYY HH:mm'); // Usando moment para parsear
-        if (parsed.isValid()) { // Usando isValid() do moment
-          setSelectedDate(parsed.format('YYYY-MM-DD')); // Usando format() do moment
-          setSelectedTime(parsed.format('HH:mm')); // Usando format() do moment
+        const parsed = moment(appointment.date, 'DD/MM/YYYY HH:mm');
+        if (parsed.isValid()) {
+          setSelectedDate(parsed.format('YYYY-MM-DD'));
+          setSelectedTime(parsed.format('HH:mm'));
         }
       }
     } else {
-      // Clears the form if no appointment for editing
       setDoctorId('');
       setPatientId('');
       setSelectedDate('');
@@ -86,60 +74,58 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       setInsurance(false);
       setInsurancePlanId('');
     }
-    setMessage(''); // Clears messages when changing appointment/mode
+    setMessage('');
     setIsError(false);
   }, [appointment]);
 
+  // SUBSTITUA TODO O handleSubmit POR ESTE:
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
     setIsError(false);
     setLoading(true);
 
-    // Combine selected date and time into an ISO 8601 string for the backend
-    let combinedDateTime = null;
-    if (selectedDate && selectedTime) {
-      try {
-        // Cria um objeto Moment no fuso horário local e depois converte para ISO 8601 (UTC)
-        const localMoment = moment(`${selectedDate}T${selectedTime}`); // Cria Moment no fuso horário local
-        
-        if (!localMoment.isValid()) { // Usando isValid() do moment
-          throw new Error('Invalid date or time selected.');
-        }
-
-        combinedDateTime = localMoment.toISOString(); // Converte para ISO 8601 (UTC)
-      } catch (error) {
-        setMessage(`Erro ao combinar data e hora: ${error.message}`);
-        setIsError(true);
-        setLoading(false);
-        return; // Stop submission
-      }
-    } else {
+    // VALIDAÇÃO: data e hora obrigatórias
+    if (!selectedDate || !selectedTime) {
       setMessage('Data e hora são obrigatórias.');
       setIsError(true);
       setLoading(false);
-      return; // Stop submission
+      return;
+    }
+
+    // COMBINA DATA E HORA → ISO 8601 UTC
+    const localDateTime = `${selectedDate}T${selectedTime}:00`; // 2025-11-01T10:30:00
+    const isoDate = new Date(localDateTime).toISOString(); // → 2025-11-01T13:30:00.000Z (UTC)
+
+    if (!isoDate || isoDate === 'Invalid Date') {
+      setMessage('Data ou hora inválida.');
+      setIsError(true);
+      setLoading(false);
+      return;
     }
 
     const appointmentData = {
       doctorId,
       patientId,
-      date: combinedDateTime, // Send as ISO 8601 string
+      date: isoDate, // ISO 8601 UTC
       type,
       insurance,
       insurancePlanId: insurance ? insurancePlanId : null,
     };
 
     try {
-      if (appointment) {
+      if (appointment?.id) {
+        // EDITAR
         await appointmentService.updateAppointment(appointment.id, appointmentData);
-        setMessage('Appointment updated successfully!');
-        onSubmit('Appointment updated successfully!', false);
+        setMessage('Agendamento atualizado com sucesso!');
+        onSubmit('Agendamento atualizado com sucesso!', false);
       } else {
+        // CRIAR
         await appointmentService.createAppointment(appointmentData);
-        setMessage('Appointment created successfully!');
-        onSubmit('Appointment created successfully!', false);
-        // Clears the form after creation
+        setMessage('Agendamento criado com sucesso!');
+        onSubmit('Agendamento criado com sucesso!', false);
+
+        // Limpar formulário
         setDoctorId('');
         setPatientId('');
         setSelectedDate('');
@@ -150,11 +136,11 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       }
       setIsError(false);
     } catch (err) {
-      console.error('Error saving appointment:', err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Error saving appointment. Please try again.';
-      setMessage(errorMessage);
+      console.error('Erro ao salvar:', err);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Erro ao salvar. Tente novamente.';
+      setMessage(errorMsg);
       setIsError(true);
-      onSubmit(errorMessage, true);
+      onSubmit(errorMsg, true);
     } finally {
       setLoading(false);
     }
@@ -163,7 +149,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   if (formLoading) {
     return (
       <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium text-center text-text-DEFAULT">
-        Loading form data...
+        Carregando formulário...
       </div>
     );
   }
@@ -171,7 +157,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   return (
     <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium">
       <h2 className="text-2xl font-bold text-primary-dark mb-6 text-center">
-        {appointment ? 'Edit Appointment' : 'New Appointment'}
+        {appointment ? 'Editar Agendamento' : 'Novo Agendamento'}
       </h2>
 
       {message && (
@@ -183,69 +169,64 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="doctorId">
-            Doctor
+            Médico
           </label>
           <select
             id="doctorId"
             value={doctorId}
             onChange={(e) => setDoctorId(e.target.value)}
-            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
+            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
             required
           >
-            <option value="">Select a doctor</option>
+            <option value="">Selecione um médico</option>
             {doctors.map((doc) => (
-              <option key={doc.id} value={doc.id}>
-                {doc.name}
-              </option>
+              <option key={doc.id} value={doc.id}>{doc.name}</option>
             ))}
           </select>
         </div>
 
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientId">
-            Patient
+            Paciente
           </label>
           <select
             id="patientId"
             value={patientId}
             onChange={(e) => setPatientId(e.target.value)}
-            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
+            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
             required
           >
-            <option value="">Select a patient</option>
+            <option value="">Selecione um paciente</option>
             {patients.map((pat) => (
-              <option key={pat.id} value={pat.id}>
-                {pat.name}
-              </option>
+              <option key={pat.id} value={pat.id}>{pat.name}</option>
             ))}
           </select>
         </div>
 
-        {/* Separated Date and Time Inputs */}
         <div className="mb-4 flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentDate">
-              Date
+              Data
             </label>
             <input
               type="date"
               id="appointmentDate"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
+              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light"
               required
             />
           </div>
           <div className="flex-1">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentTime">
-              Time
+              Hora
             </label>
             <input
               type="time"
               id="appointmentTime"
               value={selectedTime}
               onChange={(e) => setSelectedTime(e.target.value)}
-              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200"
+              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light"
               required
             />
           </div>
@@ -253,17 +234,17 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
         <div className="mb-4">
           <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentType">
-            Appointment Type
+            Tipo de Consulta
           </label>
           <select
             id="appointmentType"
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
+            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
             required
           >
-            <option value="initial">Initial</option>
-            <option value="return">Return</option>
+            <option value="initial">Inicial</option>
+            <option value="return">Retorno</option>
           </select>
         </div>
 
@@ -274,34 +255,30 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
             checked={insurance}
             onChange={(e) => {
               setInsurance(e.target.checked);
-              if (!e.target.checked) { // If unchecking insurance, clear plan selection
-                setInsurancePlanId('');
-              }
+              if (!e.target.checked) setInsurancePlanId('');
             }}
             className="mr-2 h-4 w-4 text-primary-DEFAULT rounded border-gray-300 focus:ring-primary-light"
           />
           <label className="text-text-light text-sm font-semibold" htmlFor="appointmentInsurance">
-            Insurance
+            Convênio
           </label>
         </div>
 
         {insurance && (
           <div className="mb-4">
             <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="insurancePlanId">
-              Insurance Plan
+              Plano de Saúde
             </label>
             <select
               id="insurancePlanId"
               value={insurancePlanId}
               onChange={(e) => setInsurancePlanId(e.target.value)}
-              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light transition duration-200 bg-white"
+              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
               required={insurance}
             >
-              <option value="">Select a plan</option>
+              <option value="">Selecione um plano</option>
               {insurancePlans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name}
-                </option>
+                <option key={plan.id} value={plan.id}>{plan.name}</option>
               ))}
             </select>
           </div>
@@ -309,10 +286,10 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
         <button
           type="submit"
-          className="w-full bg-primary-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light focus:ring-opacity-75 transition duration-300 ease-in-out transform hover:scale-105"
+          className="w-full bg-primary-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light transition transform hover:scale-105"
           disabled={loading}
         >
-          {loading ? 'Saving...' : (appointment ? 'Save Changes' : 'Schedule Appointment')}
+          {loading ? 'Salvando...' : (appointment ? 'Salvar Alterações' : 'Agendar')}
         </button>
       </form>
     </div>

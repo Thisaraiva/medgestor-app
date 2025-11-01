@@ -4,6 +4,7 @@ import React from 'react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { FaCalendarAlt } from 'react-icons/fa';
 
 const Dashboard = () => {
   const { user } = useAuth();

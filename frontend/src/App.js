@@ -12,7 +12,7 @@ import UserManagement from './pages/UserManagement';
 import UserFormPage from './pages/UserFormPage';
 import PatientList from './pages/PatientList';
 import PatientFormPage from './pages/PatientFormPage';
-import AppointmentList from './pages/AppointmentList';
+import CalendarPage from './pages/CalendarPage';
 import AppointmentFormPage from './pages/AppointmentFormPage';
 import InsurancePlanListPage from './pages/InsurancePlanList';
 import InsurancePlanFormPage from './pages/InsurancePlanFormPage';
@@ -52,7 +52,7 @@ function App() {
 
           {/* Rotas de Gerenciamento de Agendamentos (apenas para admin, doctor, secretary) */}
           <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
-            <Route path="/appointments" element={<AppointmentList />} />
+            <Route path="/appointments" element={<CalendarPage />} />
             <Route path="/appointments/new" element={<AppointmentFormPage />} />
             <Route path="/appointments/edit/:id" element={<AppointmentFormPage />} />
           </Route>
