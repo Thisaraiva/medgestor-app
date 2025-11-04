@@ -1,5 +1,4 @@
 // frontend/src/components/AppointmentForm.js
-
 import React, { useState, useEffect } from 'react';
 import appointmentService from '../services/appointmentService';
 import authService from '../services/authService';
@@ -7,7 +6,7 @@ import patientService from '../services/patientService';
 import insurancePlanService from '../services/insurancePlanService';
 import moment from 'moment';
 
-const AppointmentForm = ({ appointment, onSubmit }) => {
+const AppointmentForm = ({ appointment, onSubmit, onCancel }) => {
   const [doctorId, setDoctorId] = useState('');
   const [patientId, setPatientId] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
@@ -23,7 +22,6 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [formLoading, setFormLoading] = useState(true);
 
-  // Carregar dados dos dropdowns
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
@@ -36,8 +34,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
         const insurancePlansResponse = await insurancePlanService.getAllActiveInsurancePlans();
         setInsurancePlans(insurancePlansResponse.data);
       } catch (err) {
-        console.error('Erro ao carregar dados:', err);
-        setMessage('Erro ao carregar médicos, pacientes ou planos.');
+        setMessage('Erro ao carregar dados.');
         setIsError(true);
       } finally {
         setFormLoading(false);
@@ -46,7 +43,6 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     fetchDropdownData();
   }, []);
 
-  // Preencher formulário ao editar
   useEffect(() => {
     if (appointment) {
       setDoctorId(appointment.doctorId || '');
@@ -78,14 +74,12 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     setIsError(false);
   }, [appointment]);
 
-  // SUBSTITUA TODO O handleSubmit POR ESTE:
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
     setIsError(false);
     setLoading(true);
 
-    // VALIDAÇÃO: data e hora obrigatórias
     if (!selectedDate || !selectedTime) {
       setMessage('Data e hora são obrigatórias.');
       setIsError(true);
@@ -93,9 +87,8 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       return;
     }
 
-    // COMBINA DATA E HORA → ISO 8601 UTC
-    const localDateTime = `${selectedDate}T${selectedTime}:00`; // 2025-11-01T10:30:00
-    const isoDate = new Date(localDateTime).toISOString(); // → 2025-11-01T13:30:00.000Z (UTC)
+    const localDateTime = `${selectedDate}T${selectedTime}:00`;
+    const isoDate = new Date(localDateTime).toISOString();
 
     if (!isoDate || isoDate === 'Invalid Date') {
       setMessage('Data ou hora inválida.');
@@ -107,7 +100,7 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
     const appointmentData = {
       doctorId,
       patientId,
-      date: isoDate, // ISO 8601 UTC
+      date: isoDate,
       type,
       insurance,
       insurancePlanId: insurance ? insurancePlanId : null,
@@ -115,17 +108,14 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
 
     try {
       if (appointment?.id) {
-        // EDITAR
         await appointmentService.updateAppointment(appointment.id, appointmentData);
         setMessage('Agendamento atualizado com sucesso!');
         onSubmit('Agendamento atualizado com sucesso!', false);
       } else {
-        // CRIAR
         await appointmentService.createAppointment(appointmentData);
         setMessage('Agendamento criado com sucesso!');
         onSubmit('Agendamento criado com sucesso!', false);
-
-        // Limpar formulário
+        // Limpa apenas se sucesso
         setDoctorId('');
         setPatientId('');
         setSelectedDate('');
@@ -137,160 +127,166 @@ const AppointmentForm = ({ appointment, onSubmit }) => {
       setIsError(false);
     } catch (err) {
       console.error('Erro ao salvar:', err);
-      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Erro ao salvar. Tente novamente.';
+      const errorMsg = err.response?.data?.error || 'Erro ao salvar. Tente novamente.';
       setMessage(errorMsg);
       setIsError(true);
-      onSubmit(errorMsg, true);
+      // NÃO chama onSubmit com erro → mantém formulário aberto
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDelete = async () => {
+    if (!appointment?.id) return;
+    try {
+      await appointmentService.deleteAppointment(appointment.id);
+      setMessage('Agendamento excluído com sucesso!');
+      onSubmit('Agendamento excluído com sucesso!', false);
+    } catch (err) {
+      setMessage('Erro ao excluir.');
+      setIsError(true);
+    }
+  };
+
   if (formLoading) {
-    return (
-      <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium text-center text-text-DEFAULT">
-        Carregando formulário...
-      </div>
-    );
+    return <div className="text-center p-6">Carregando...</div>;
   }
 
   return (
-    <div className="bg-background-DEFAULT p-6 rounded-xl shadow-custom-medium">
-      <h2 className="text-2xl font-bold text-primary-dark mb-6 text-center">
-        {appointment ? 'Editar Agendamento' : 'Novo Agendamento'}
+    <div className="bg-white p-8 rounded-2xl shadow-xl max-w-2xl mx-auto">
+      <h2 className="text-3xl font-bold text-primary-dark mb-6 text-center">
+        {appointment?.id ? 'Editar Agendamento' : 'Novo Agendamento'}
       </h2>
 
       {message && (
-        <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isError ? 'bg-error text-white' : 'bg-success text-white'}`}>
+        <div className={`p-4 mb-6 rounded-lg text-center font-medium ${isError ? 'bg-red-700 text-red-100 border border-red-300' : 'bg-green-700 text-green-100 border border-green-300'}`}>
           {message}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="doctorId">
-            Médico
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Médico */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Médico</label>
           <select
-            id="doctorId"
             value={doctorId}
             onChange={(e) => setDoctorId(e.target.value)}
-            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-dark"
             required
           >
-            <option value="">Selecione um médico</option>
-            {doctors.map((doc) => (
-              <option key={doc.id} value={doc.id}>{doc.name}</option>
-            ))}
+            <option value="">Selecione</option>
+            {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="patientId">
-            Paciente
-          </label>
+        {/* Paciente */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Paciente</label>
           <select
-            id="patientId"
             value={patientId}
             onChange={(e) => setPatientId(e.target.value)}
-            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-dark"
             required
           >
-            <option value="">Selecione um paciente</option>
-            {patients.map((pat) => (
-              <option key={pat.id} value={pat.id}>{pat.name}</option>
-            ))}
+            <option value="">Selecione</option>
+            {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
 
-        <div className="mb-4 flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentDate">
-              Data
-            </label>
+        {/* Data e Hora */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Data</label>
             <input
               type="date"
-              id="appointmentDate"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light"
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-dark"
               required
             />
           </div>
-          <div className="flex-1">
-            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentTime">
-              Hora
-            </label>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Hora</label>
             <input
               type="time"
-              id="appointmentTime"
               value={selectedTime}
               onChange={(e) => setSelectedTime(e.target.value)}
-              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light"
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-dark"
               required
             />
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="appointmentType">
-            Tipo de Consulta
-          </label>
+        {/* Tipo */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo</label>
           <select
-            id="appointmentType"
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
-            required
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-dark"
           >
             <option value="initial">Inicial</option>
             <option value="return">Retorno</option>
           </select>
         </div>
 
-        <div className="mb-6 flex items-center">
+        {/* Convênio */}
+        <div className="flex items-center gap-3">
           <input
             type="checkbox"
-            id="appointmentInsurance"
             checked={insurance}
             onChange={(e) => {
               setInsurance(e.target.checked);
               if (!e.target.checked) setInsurancePlanId('');
             }}
-            className="mr-2 h-4 w-4 text-primary-DEFAULT rounded border-gray-300 focus:ring-primary-light"
+            className="h-5 w-5 text-primary-dark"
           />
-          <label className="text-text-light text-sm font-semibold" htmlFor="appointmentInsurance">
-            Convênio
-          </label>
+          <label className="text-sm font-semibold">Convênio</label>
         </div>
 
         {insurance && (
-          <div className="mb-4">
-            <label className="block text-text-light text-sm font-semibold mb-2" htmlFor="insurancePlanId">
-              Plano de Saúde
-            </label>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Plano</label>
             <select
-              id="insurancePlanId"
               value={insurancePlanId}
               onChange={(e) => setInsurancePlanId(e.target.value)}
-              className="w-full p-3 border border-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-light bg-white"
-              required={insurance}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary-dark"
+              required
             >
-              <option value="">Selecione um plano</option>
-              {insurancePlans.map((plan) => (
-                <option key={plan.id} value={plan.id}>{plan.name}</option>
-              ))}
+              <option value="">Selecione</option>
+              {insurancePlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
         )}
 
-        <button
-          type="submit"
-          className="w-full bg-primary-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light transition transform hover:scale-105"
-          disabled={loading}
-        >
-          {loading ? 'Salvando...' : (appointment ? 'Salvar Alterações' : 'Agendar')}
-        </button>
+        {/* Botões */}
+        <div className="flex gap-4 pt-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-primary-dark text-white py-3 rounded-lg font-bold hover:bg-primary-light hover:scale-105 transition transform"
+          >
+            {loading ? 'Salvando...' : (appointment?.id ? 'Salvar' : 'Agendar')}
+          </button>
+
+          {appointment?.id && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="flex-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 hover:scale-105 transition transform"
+            >
+              Excluir
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-400 transition"
+          >            
+            Cancelar
+          </button>
+        </div>
       </form>
     </div>
   );

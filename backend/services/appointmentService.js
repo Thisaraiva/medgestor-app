@@ -1,166 +1,142 @@
-// Arquivo C:\Programacao\Projetos\JavaScript\medgestor-app\backend\services\appointmentService.js
-
+// backend/services/appointmentService.js
 const { Appointment, User, Patient, InsurancePlan } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
 const { sendAppointmentConfirmation } = require('../utils/email');
 const moment = require('moment-timezone');
 const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
-
 require('moment/locale/pt-br');
-
 const APP_TIMEZONE = 'America/Sao_Paulo';
 
-const validateAndParseIsoDate = (isoDateString) => {
-  const parsedMoment = moment.utc(isoDateString);
-
-  if (!parsedMoment.isValid()) {
-    throw new ValidationError('Formato de data e hora inválido (esperado: ISO 8601).');
-  }
-
-  const dateInAppTimezone = parsedMoment.tz(APP_TIMEZONE);
-
-  if (dateInAppTimezone.isBefore(moment().tz(APP_TIMEZONE))) {
-    throw new ValidationError('A data e hora da consulta devem ser futuras.');
-  }
-
-  return parsedMoment;
+const alignToSlotStart = (dateMoment) => {
+  const minutes = dateMoment.minutes();
+  const slotMinutes = Math.floor(minutes / 30) * 30;
+  return dateMoment.clone().minutes(slotMinutes).seconds(0).milliseconds(0);
 };
 
-const formatUtcDateToLocalString = (dateObj) => {
-  return moment.utc(dateObj).tz(APP_TIMEZONE).format('DD/MM/YYYY HH:mm');
-};
+const checkConflict = async (doctorId, dateMoment, excludeId = null) => {
+  const local = dateMoment.tz(APP_TIMEZONE);
+  const slotStart = alignToSlotStart(local);
+  const slotEnd = slotStart.clone().add(30, 'minutes');
 
-const formatUtcDateToLocalDateInput = (dateObj) => {
-  return moment.utc(dateObj).tz(APP_TIMEZONE).format('YYYY-MM-DD');
-};
-
-const formatUtcDateToLocalTimeInput = (dateObj) => {
-  return moment.utc(dateObj).tz(APP_TIMEZONE).format('HH:mm');
-};
-
-const createAppointment = async (data) => {
-  const appointmentDateMomentUtc = validateAndParseIsoDate(data.date);
-
-  const doctor = await User.findByPk(data.doctorId);
-  if (!doctor || doctor.role !== 'doctor') {
-    throw new NotFoundError('Médico não encontrado ou não é um médico válido.');
-  }
-
-  const patient = await Patient.findByPk(data.patientId);
-  if (!patient) {
-    throw new NotFoundError('Paciente não encontrado.');
-  }
-
-  if (data.insurance && !data.insurancePlanId) {
-    throw new ValidationError('O ID do plano de saúde é obrigatório quando a consulta é por convênio.');
-  }
-  if (data.insurancePlanId) {
-    const insurancePlan = await InsurancePlan.findByPk(data.insurancePlanId);
-    if (!insurancePlan) {
-      throw new NotFoundError('Plano de saúde não encontrado.');
-    }
-  }
-
-  const startOfAppointmentHour = appointmentDateMomentUtc.clone().startOf('hour');
-  const endOfAppointmentHour = appointmentDateMomentUtc.clone().add(1, 'hour').startOf('hour');
-
-  const existingAppointment = await Appointment.findOne({
+  const conflict = await Appointment.findOne({
     where: {
-      doctorId: data.doctorId,
-      date: {
-        [Op.between]: [startOfAppointmentHour.toDate(), endOfAppointmentHour.toDate()],
-      },
+      doctorId,
+      [Op.and]: [
+        { date: { [Op.gte]: slotStart.clone().subtract(29, 'minutes').toDate() } },
+        { date: { [Op.lt]: slotEnd.toDate() } },
+      ],
+      ...(excludeId && { id: { [Op.ne]: excludeId } }),
     },
   });
 
-  if (existingAppointment) {
-    throw new ValidationError('Médico já possui um agendamento neste horário.');
+  if (conflict) {
+    //const conflictTime = moment.utc(conflict.date).tz(APP_TIMEZONE).format('HH:mm');
+    throw new ValidationError(`Médico já possui um agendamento neste horário`);
   }
+};
 
+const validateAndParseIsoDate = (isoDateString) => {
+  const parsed = moment.utc(isoDateString);
+  if (!parsed.isValid()) {
+    throw new ValidationError('Formato de data inválido. Use ISO 8601.');
+  }
+  const local = parsed.tz(APP_TIMEZONE);
+  if (local.isBefore(moment().tz(APP_TIMEZONE))) {
+    throw new ValidationError('data e hora da consulta devem ser futuras');
+  }
+  return parsed;
+};
+
+const formatDate = (date) => moment.utc(date).tz(APP_TIMEZONE);
+
+const createAppointment = async (data) => {
+  const dateMoment = validateAndParseIsoDate(data.date);
+  await checkConflict(data.doctorId, dateMoment);
+  const doctor = await User.findByPk(data.doctorId);
+  if (!doctor || doctor.role !== 'doctor') throw new NotFoundError('Médico não encontrado');
+  const patient = await Patient.findByPk(data.patientId);
+  if (!patient) throw new NotFoundError('Paciente não encontrado.');
+  if (data.insurance && !data.insurancePlanId) {
+    throw new ValidationError('Plano de saúde obrigatório para convênio.');
+  }
+  if (data.insurancePlanId) {
+    const plan = await InsurancePlan.findByPk(data.insurancePlanId);
+    if (!plan) throw new NotFoundError('Plano de saúde não encontrado.');
+  }
   const appointment = await Appointment.create({
     id: uuidv4(),
     doctorId: data.doctorId,
     patientId: data.patientId,
-    date: appointmentDateMomentUtc.toDate(),
+    date: dateMoment.toDate(),
     type: data.type,
     insurance: data.insurance,
     insurancePlanId: data.insurance ? data.insurancePlanId : null,
   });
-
-  const createdAppointmentWithDetails = await Appointment.findByPk(appointment.id, {
+  const full = await Appointment.findByPk(appointment.id, {
     include: [
       { model: User, as: 'doctor', attributes: ['id', 'name'] },
       { model: Patient, as: 'patient', attributes: ['id', 'name', 'email'] },
       { model: InsurancePlan, as: 'insurancePlan', attributes: ['id', 'name'] },
     ],
   });
-
-  if (createdAppointmentWithDetails.patient?.email) {
+  if (full.patient?.email) {
     await sendAppointmentConfirmation({
-      to: createdAppointmentWithDetails.patient.email,
-      patientName: createdAppointmentWithDetails.patient.name,
-      doctorName: createdAppointmentWithDetails.doctor.name,
-      date: formatUtcDateToLocalString(createdAppointmentWithDetails.date),
-      insuranceInfo: createdAppointmentWithDetails.insurance ? createdAppointmentWithDetails.insurancePlan?.name : 'Particular'
+      to: full.patient.email,
+      patientName: full.patient.name,
+      doctorName: full.doctor.name,
+      date: formatDate(full.date).format('DD/MM/YYYY HH:mm'),
+      insuranceInfo: full.insurance ? full.insurancePlan?.name : 'Particular',
     });
   }
-
-  return {
-    ...createdAppointmentWithDetails.toJSON(),
-    date: formatUtcDateToLocalString(createdAppointmentWithDetails.date),
-    dateOnly: formatUtcDateToLocalDateInput(createdAppointmentWithDetails.date),
-    timeOnly: formatUtcDateToLocalTimeInput(createdAppointmentWithDetails.date),
-    doctor: createdAppointmentWithDetails.doctor ? { id: createdAppointmentWithDetails.doctor.id, name: createdAppointmentWithDetails.doctor.name } : null,
-    patient: createdAppointmentWithDetails.patient ? { id: createdAppointmentWithDetails.patient.id, name: createdAppointmentWithDetails.patient.name } : null,
-    insurancePlan: createdAppointmentWithDetails.insurancePlan ? { id: createdAppointmentWithDetails.insurancePlan.id, name: createdAppointmentWithDetails.insurancePlan.name } : null,
-  };
+  return formatAppointmentResponse(full);
 };
 
+const updateAppointment = async (id, data) => {
+  const appointment = await Appointment.findByPk(id);
+  if (!appointment) throw new NotFoundError('Consulta não encontrada.');
+  let dateMoment = moment.utc(appointment.date);
+  if (data.date) {
+    dateMoment = validateAndParseIsoDate(data.date);
+  }
+  const doctorId = data.doctorId || appointment.doctorId;
+  await checkConflict(doctorId, dateMoment, id);
+
+  if (data.doctorId) {
+    const doctor = await User.findByPk(data.doctorId);
+    if (!doctor || doctor.role !== 'doctor') throw new NotFoundError('Médico não encontrado');
+  }
+  if (data.patientId) {
+    const patient = await Patient.findByPk(data.patientId);
+    if (!patient) throw new NotFoundError('Paciente não encontrado.');
+  }
+  await appointment.update({
+    ...data,
+    date: dateMoment.toDate(),
+    insurancePlanId: data.insurance === false ? null : data.insurancePlanId,
+  });
+  const updated = await Appointment.findByPk(id, {
+    include: [
+      { model: User, as: 'doctor', attributes: ['id', 'name'] },
+      { model: Patient, as: 'patient', attributes: ['id', 'name'] },
+      { model: InsurancePlan, as: 'insurancePlan', attributes: ['id', 'name'] },
+    ],
+  });
+  return formatAppointmentResponse(updated);
+};
+
+const formatAppointmentResponse = (appt) => ({
+  ...appt.toJSON(),
+  date: formatDate(appt.date).format('DD/MM/YYYY HH:mm'),
+  dateOnly: formatDate(appt.date).format('YYYY-MM-DD'),
+  timeOnly: formatDate(appt.date).format('HH:mm'),
+  doctor: appt.doctor ? { id: appt.doctor.id, name: appt.doctor.name } : null,
+  patient: appt.patient ? { id: appt.patient.id, name: appt.patient.name } : null,
+  insurancePlan: appt.insurancePlan ? { id: appt.insurancePlan.id, name: appt.insurancePlan.name } : null,
+});
+
 const getAppointments = async (filters, currentUser) => {
-  const where = {};
-  if (filters.type) {
-    where.type = filters.type;
-  }
-
-  // Lógica de filtragem baseada no perfil do usuário
-  if (currentUser.role === 'doctor') {
-    // Se o usuário é um médico, filtra apenas por seus próprios agendamentos
-    where.doctorId = currentUser.id;
-  } else {
-    // Para admin e secretária, permite filtrar por doctorId se o parâmetro estiver presente
-    if (filters.doctorId) {
-      where.doctorId = filters.doctorId;
-    }
-  }
-
-  if (filters.patientId) {
-    where.patientId = filters.patientId;
-  }
-  if (filters.startDate && filters.endDate) {
-    const start = moment.utc(filters.startDate);
-    const end = moment.utc(filters.endDate);
-    if (start.isValid() && end.isValid()) {
-      where.date = {
-        [Op.between]: [start.toDate(), end.toDate()],
-      };
-    }
-  } else if (filters.startDate) {
-    const start = moment.utc(filters.startDate);
-    if (start.isValid()) {
-      where.date = {
-        [Op.gte]: start.toDate(),
-      };
-    }
-  } else if (filters.endDate) {
-    const end = moment.utc(filters.endDate);
-    if (end.isValid()) {
-      where.date = {
-        [Op.lte]: end.toDate(),
-      };
-    }
-  }
-
+  const where = buildFilters(filters, currentUser);
   const appointments = await Appointment.findAll({
     where,
     include: [
@@ -170,135 +146,42 @@ const getAppointments = async (filters, currentUser) => {
     ],
     order: [['date', 'ASC']],
   });
+  return appointments.map(formatAppointmentResponse);
+};
 
-  return appointments.map(appointment => ({
-    ...appointment.toJSON(),
-    date: formatUtcDateToLocalString(appointment.date),
-    dateOnly: formatUtcDateToLocalDateInput(appointment.date),
-    timeOnly: formatUtcDateToLocalTimeInput(appointment.date),
-    doctor: appointment.doctor ? { id: appointment.doctor.id, name: appointment.doctor.name } : null,
-    patient: appointment.patient ? { id: appointment.patient.id, name: appointment.patient.name } : null,
-    insurancePlan: appointment.insurancePlan ? { id: appointment.insurancePlan.id, name: appointment.insurancePlan.name } : null,
-  }));
+const buildFilters = (filters, currentUser) => {
+  const where = {};
+  if (filters.type) where.type = filters.type;
+  if (currentUser.role === 'doctor') {
+    where.doctorId = currentUser.id;
+  } else if (filters.doctorId && filters.doctorId.trim() !== '') {
+    where.doctorId = filters.doctorId;
+  }
+  if (filters.patientId) where.patientId = filters.patientId;
+  if (filters.startDate || filters.endDate) {
+    where.date = {};
+    if (filters.startDate) where.date[Op.gte] = moment.utc(filters.startDate).toDate();
+    if (filters.endDate) where.date[Op.lte] = moment.utc(filters.endDate).toDate();
+  }
+  return where;
 };
 
 const getAppointmentById = async (id) => {
-  const appointment = await Appointment.findByPk(id, {
+  const appt = await Appointment.findByPk(id, {
     include: [
       { model: User, as: 'doctor', attributes: ['id', 'name'] },
       { model: Patient, as: 'patient', attributes: ['id', 'name'] },
       { model: InsurancePlan, as: 'insurancePlan', attributes: ['id', 'name'] },
     ],
   });
-
-  if (!appointment) {
-    throw new NotFoundError('Consulta não encontrada.');
-  }
-
-  return {
-    ...appointment.toJSON(),
-    date: formatUtcDateToLocalString(appointment.date),
-    dateOnly: formatUtcDateToLocalDateInput(appointment.date),
-    timeOnly: formatUtcDateToLocalTimeInput(appointment.date),
-    doctor: appointment.doctor ? { id: appointment.doctor.id, name: appointment.doctor.name } : null,
-    patient: appointment.patient ? { id: appointment.patient.id, name: appointment.patient.name } : null,
-    insurancePlan: appointment.insurancePlan ? { id: appointment.insurancePlan.id, name: appointment.insurancePlan.name } : null,
-  };
-};
-
-const updateAppointment = async (id, data) => {
-  const appointment = await Appointment.findByPk(id);
-  if (!appointment) {
-    throw new NotFoundError('Consulta não encontrada.');
-  }
-
-  let updatedDateMomentUtc = moment.utc(appointment.date);
-  if (data.date) {
-    updatedDateMomentUtc = validateAndParseIsoDate(data.date);
-  }
-
-  if (data.doctorId) {
-    const doctor = await User.findByPk(data.doctorId);
-    if (!doctor || doctor.role !== 'doctor') {
-      throw new NotFoundError('Médico não encontrado ou não é um médico válido.');
-    }
-  }
-  if (data.patientId) {
-    const patient = await Patient.findByPk(data.patientId);
-    if (!patient) {
-      throw new NotFoundError('Paciente não encontrado.');
-    }
-  }
-
-  if (data.insurance !== undefined) {
-    if (data.insurance && !data.insurancePlanId) {
-      throw new ValidationError('O ID do plano de saúde é obrigatório quando a consulta é por convênio.');
-    }
-    if (!data.insurance && data.insurancePlanId) {
-      data.insurancePlanId = null;
-    }
-  } else if (data.insurancePlanId) {
-    const insurancePlan = await InsurancePlan.findByPk(data.insurancePlanId);
-    if (!insurancePlan) {
-      throw new NotFoundError('Plano de saúde não encontrado.');
-    }
-  }
-
-  if (data.date || data.doctorId) {
-    const doctorIdToCheck = data.doctorId || appointment.doctorId;
-    const dateToCheckMoment = updatedDateMomentUtc;
-
-    const startOfAppointmentHour = dateToCheckMoment.clone().startOf('hour');
-    const endOfAppointmentHour = dateToCheckMoment.clone().add(1, 'hour').startOf('hour');
-
-    const existingConflict = await Appointment.findOne({
-      where: {
-        doctorId: doctorIdToCheck,
-        date: {
-          [Op.between]: [startOfAppointmentHour.toDate(), endOfAppointmentHour.toDate()],
-        },
-        id: {
-          [Op.ne]: id,
-        },
-      },
-    });
-
-    if (existingConflict) {
-      throw new ValidationError('Médico já possui um agendamento neste horário.');
-    }
-  }
-
-  await appointment.update({
-    ...data,
-    date: updatedDateMomentUtc.toDate(),
-    insurancePlanId: data.insurance !== undefined ? (data.insurance ? data.insurancePlanId : null) : appointment.insurancePlanId,
-  });
-
-  const updatedAppointment = await Appointment.findByPk(id, {
-    include: [
-      { model: User, as: 'doctor', attributes: ['id', 'name'] },
-      { model: Patient, as: 'patient', attributes: ['id', 'name'] },
-      { model: InsurancePlan, as: 'insurancePlan', attributes: ['id', 'name'] },
-    ],
-  });
-
-  return {
-    ...updatedAppointment.toJSON(),
-    date: formatUtcDateToLocalString(updatedAppointment.date),
-    dateOnly: formatUtcDateToLocalDateInput(updatedAppointment.date),
-    timeOnly: formatUtcDateToLocalTimeInput(updatedAppointment.date),
-    doctor: updatedAppointment.doctor ? { id: updatedAppointment.doctor.id, name: updatedAppointment.doctor.name } : null,
-    patient: updatedAppointment.patient ? { id: updatedAppointment.patient.id, name: updatedAppointment.patient.name } : null,
-    insurancePlan: updatedAppointment.insurancePlan ? { id: updatedAppointment.insurancePlan.id, name: updatedAppointment.insurancePlan.name } : null,
-  };
+  if (!appt) throw new NotFoundError('Consulta não encontrada.');
+  return formatAppointmentResponse(appt);
 };
 
 const deleteAppointment = async (id) => {
-  const appointment = await Appointment.findByPk(id);
-  if (!appointment) {
-    throw new NotFoundError('Consulta não encontrada.');
-  }
-  await appointment.destroy();
+  const appt = await Appointment.findByPk(id);
+  if (!appt) throw new NotFoundError('Consulta não encontrada.');
+  await appt.destroy();
 };
 
 module.exports = {

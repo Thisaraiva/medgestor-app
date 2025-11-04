@@ -3,15 +3,6 @@
 import React from 'react';
 import Modal from './Modal'; // Reutiliza o componente Modal
 
-/**
- * Componente de Diálogo de Confirmação.
- *
- * @param {object} props - Propriedades do componente.
- * @param {boolean} props.show - Controla a visibilidade do diálogo.
- * @param {function} props.onClose - Função chamada ao cancelar/fechar.
- * @param {function} props.onConfirm - Função chamada ao confirmar.
- * @param {string} props.message - Mensagem a ser exibida no diálogo.
- */
 const ConfirmDialog = ({ show, onClose, onConfirm, message }) => {
   return (
     <Modal show={show} onClose={onClose}>

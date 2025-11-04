@@ -11,6 +11,7 @@ import appointmentService from '../services/appointmentService';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import { parseBrDateToISO } from '../utils/dateUtils';
+import moment from 'moment-timezone';
 
 const CalendarPage = () => {
   const calendarRef = useRef(null);
@@ -25,155 +26,143 @@ const CalendarPage = () => {
   const [isError, setIsError] = useState(false);
   const { user: currentUser } = useAuth();
 
-  // Carregar médicos
   useEffect(() => {
     const fetchDoctors = async () => {
       if (!currentUser) return;
       try {
         const res = await appointmentService.getAllAppointments({});
         const doctorMap = new Map();
-        (res.data || []).forEach(appt => {
-          if (appt.doctor?.id && appt.doctor?.name) {
-            doctorMap.set(appt.doctor.id, appt.doctor.name);
-          }
+        res.data?.forEach(appt => {
+          if (appt.doctor?.id) doctorMap.set(appt.doctor.id, appt.doctor.name);
         });
-        const doctorList = Array.from(doctorMap, ([id, name]) => ({ id, name }));
-        setDoctors(doctorList);
-        if (currentUser.role === 'doctor') {
-          setSelectedDoctorId(currentUser.id);
-        }
+        const list = Array.from(doctorMap, ([id, name]) => ({ id, name }));
+        setDoctors(list);
+        if (currentUser.role === 'doctor') setSelectedDoctorId(currentUser.id);
       } catch (err) {
-        console.error('Erro ao carregar médicos:', err);
+        console.error(err);
       }
     };
     fetchDoctors();
   }, [currentUser]);
 
-  // Carregar eventos
   const fetchEvents = async () => {
     if (!currentUser) return;
-
+    const filters = currentUser.role === 'doctor' ? { doctorId: currentUser.id } : { doctorId: selectedDoctorId };
     try {
-      const filters = {};
-      if (currentUser.role === 'doctor') {
-        filters.doctorId = currentUser.id;
-      } else if (selectedDoctorId) {
-        filters.doctorId = selectedDoctorId;
-      }
-
       const res = await appointmentService.getAllAppointments(filters);
-      const appointments = Array.isArray(res.data) ? res.data : [];
-
-      const formattedEvents = appointments
-        .filter(appt => appt.date && appt.id)
+      const formatted = (res.data || [])
+        .filter(a => a.date && a.id)
         .map(appt => {
-          const startISO = parseBrDateToISO(appt.date);
-          if (!startISO) {
-            console.warn('Data inválida ignorada:', appt.date);
-            return null;
-          }
-
-          const endDate = new Date(new Date(startISO).getTime() + 30 * 60000);
-          const endISO = endDate.toISOString();
-
+          const start = parseBrDateToISO(appt.date);
+          if (!start) return null;
+          const end = new Date(new Date(start).getTime() + 30 * 60000).toISOString();
+          const timeStr = moment.utc(appt.date).tz('America/Sao_Paulo').format('HH:mm');
           return {
-            id: appt.id.toString(),
-            title: `${appt.patient?.name || 'Paciente'} (${appt.type === 'initial' ? 'Inicial' : 'Retorno'})`,
-            start: startISO,
-            end: endISO,
+            id: appt.id,
+            title: `${timeStr} - ${appt.patient?.name || 'Paciente'} (${appt.type === 'initial' ? 'Ini' : 'Ret'})`,
+            start,
+            end,
             backgroundColor: appt.insurance ? '#1a73e8' : '#34a853',
-            borderColor: appt.insurance ? '#0d47a1' : '#1b5e20',
-            extendedProps: { ...appt }
+            borderColor: 'transparent',
+            textColor: '#fff',
+            extendedProps: appt,
           };
         })
-        .filter(event => event !== null);
-
-      setEvents(formattedEvents);
+        .filter(Boolean);
+      setEvents(formatted);
     } catch (err) {
-      console.error('Erro ao carregar agenda:', err);
-      setMessage('Erro ao carregar agenda. Verifique sua conexão.');
-      setIsError(true);
+      showMessage('Erro ao carregar agenda.', true);
     }
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, [selectedDoctorId, currentUser]);
+  useEffect(() => { fetchEvents(); }, [selectedDoctorId, currentUser]);
 
-  // Novo agendamento
+  const showMessage = (msg, error = false) => {
+    setMessage(msg);
+    setIsError(error);
+    setTimeout(() => setMessage(''), 4000);
+  };
+
   const handleDateClick = (info) => {
-    const localDate = new Date(info.date);
-    const isoLocal = localDate.toISOString().slice(0, 16); // 2025-11-01T10:30
-    setSelectedAppointment({ date: isoLocal });
+    // Usa moment com fuso de SP para evitar +3h
+    const local = moment.tz(info.dateStr, 'America/Sao_Paulo');
+    const aligned = local.clone().minutes(Math.floor(local.minutes() / 30) * 30).seconds(0);
+
+    setSelectedAppointment({
+      dateOnly: aligned.format('YYYY-MM-DD'),
+      timeOnly: aligned.format('HH:mm')
+    });
     setShowForm(true);
   };
 
-  // Editar
   const handleEventClick = (info) => {
-    const appt = info.event.extendedProps;
-    if (appt.id) {
-      setSelectedAppointment(appt);
-      setShowForm(true);
-    }
+    setSelectedAppointment(info.event.extendedProps);
+    setShowForm(true);
   };
 
-  // Excluir
+  const handleFormClose = () => {
+    setShowForm(false);
+    setSelectedAppointment(null);
+  };
+
+  const handleFormSubmit = (msg, error) => {
+    showMessage(msg, error);
+    handleFormClose();
+    fetchEvents();
+  };
+
   const confirmDelete = (id) => {
     setAppointmentToDelete(id);
     setShowConfirm(true);
   };
 
-  const handleDeleteConfirmed = async () => {
+  const handleDelete = async () => {
     try {
       await appointmentService.deleteAppointment(appointmentToDelete);
-      setMessage('Agendamento excluído!');
-      setIsError(false);
+      showMessage('Agendamento excluído com sucesso!');
       fetchEvents();
     } catch (err) {
-      setMessage('Erro ao excluir.');
-      setIsError(true);
+      showMessage('Erro ao excluir agendamento.', true);
     } finally {
       setShowConfirm(false);
       setAppointmentToDelete(null);
     }
   };
 
-  const handleFormSubmit = () => {
-    setShowForm(false);
-    setSelectedAppointment(null);
-    fetchEvents();
-    setMessage(selectedAppointment?.id ? 'Atualizado!' : 'Criado!');
-    setIsError(false);
-    setTimeout(() => setMessage(''), 4000);
-  };
-
   return (
     <div className="min-h-screen bg-background-light">
       <Navbar />
       <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h1 className="text-4xl font-bold text-primary-dark">Agenda</h1>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 items-center flex-wrap">
             {currentUser?.role !== 'doctor' && doctors.length > 0 && (
               <select
                 value={selectedDoctorId}
                 onChange={(e) => setSelectedDoctorId(e.target.value)}
-                className="p-2 border rounded-lg text-sm"
+                className="p-3 pr-10 border rounded-lg text-sm focus:ring-2 focus:ring-primary-dark appearance-none bg-white"
+                style={{
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E")',
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5em'
+                }}
               >
                 <option value="">Todos os médicos</option>
-                {doctors.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
+                {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             )}
             <button
               onClick={() => {
-                const now = new Date();
-                now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30);
-                setSelectedAppointment({ date: now.toISOString().slice(0, 16) });
+                const now = moment.tz('America/Sao_Paulo');
+                now.minutes(Math.floor(now.minutes() / 30) * 30).seconds(0);
+                setSelectedAppointment({
+                  dateOnly: now.format('YYYY-MM-DD'),
+                  timeOnly: now.format('HH:mm')
+                });
                 setShowForm(true);
               }}
-              className="bg-primary-dark text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-light"
+              className="bg-primary-dark text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-light transition"
             >
               Novo Agendamento
             </button>
@@ -181,12 +170,12 @@ const CalendarPage = () => {
         </div>
 
         {message && (
-          <div className={`p-3 mb-4 rounded-lg text-sm text-center ${isError ? 'bg-error text-white' : 'bg-success text-white'}`}>
+          <div className={`p-4 mb-6 rounded-lg text-center font-medium ${isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
             {message}
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-custom-medium p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-6 overflow-hidden">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -201,56 +190,54 @@ const CalendarPage = () => {
             eventClick={handleEventClick}
             selectable={true}
             slotDuration="00:30:00"
-            slotMinTime="07:00:00"
-            slotMaxTime="19:00:00"
+            slotMinTime="06:00:00"
+            slotMaxTime="22:00:00"
             height="auto"
             locale="pt-br"
-            buttonText={{
-              today: 'Hoje',
-              month: 'Mês',
-              week: 'Semana',
-              day: 'Dia'
+            buttonText={{ today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' }}
+            slotEventOverlap={false}
+            dayMaxEvents={1} // ← Evita crescimento de linhas
+            moreLinkContent={(args) => `+${args.num} mais`}
+            eventDidMount={(info) => {
+              // Força background no mês
+              if (info.view.type === 'dayGridMonth') {
+                info.el.style.backgroundColor = info.event.backgroundColor;
+                info.el.style.borderColor = 'transparent';
+                info.el.style.color = '#fff';
+                info.el.style.borderRadius = '4px';
+                info.el.style.padding = '2px 4px';
+                info.el.style.fontSize = '11px';
+              }
             }}
-            eventTimeFormat={{
-              hour: '2-digit',
-              minute: '2-digit',
-              meridiem: false
-            }}
-            eventContent={(eventInfo) => (
-              <div className="p-1 text-xs">
-                <strong>{eventInfo.timeText}</strong> {eventInfo.event.title}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    confirmDelete(eventInfo.event.id);
-                  }}
-                  className="ml-2 text-red-600 hover:text-red-800"
-                >
-                  ×
-                </button>
+            eventContent={(info) => (
+              <div
+                className="p-1 text-xs font-medium truncate cursor-pointer"
+                title={`${info.timeText} - ${info.event.title}`}
+              >
+                {info.event.title}
+              </div>
+            )}
+            dayCellContent={(arg) => (
+              <div className={arg.isToday ? 'bg-blue-50 rounded p-1 text-center' : 'text-center'}>
+                {arg.dayNumberText.replace('º', '')}
               </div>
             )}
           />
         </div>
 
-        <Modal show={showForm} onClose={() => { setShowForm(false); setSelectedAppointment(null); }}>
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">
-              {selectedAppointment?.id ? 'Editar' : 'Novo'} Agendamento
-            </h2>
-            <AppointmentForm
-              appointment={selectedAppointment}
-              onSubmit={handleFormSubmit}
-              onCancel={() => { setShowForm(false); setSelectedAppointment(null); }}
-            />
-          </div>
+        <Modal show={showForm} onClose={handleFormClose}>
+          <AppointmentForm
+            appointment={selectedAppointment}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormClose}
+          />
         </Modal>
 
         <ConfirmDialog
           show={showConfirm}
           onClose={() => setShowConfirm(false)}
-          onConfirm={handleDeleteConfirmed}
-          message="Excluir este agendamento?"
+          onConfirm={handleDelete}
+          message="Tem certeza que deseja excluir este agendamento?"
         />
       </div>
     </div>

@@ -70,7 +70,7 @@ const updateSchema = Joi.object({
 
 const getSchema = Joi.object({
   type: Joi.string().valid('initial', 'return').optional(),
-  doctorId: Joi.string().uuid().optional().messages({
+  doctorId: Joi.string().uuid().optional().allow('').messages({
     'string.uuid': 'ID do médico deve ser um UUID válido',
   }),
   patientId: Joi.string().uuid().optional().messages({
