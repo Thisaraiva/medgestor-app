@@ -1,4 +1,4 @@
-// frontend/src/pages/CalendarPage.js (APENAS a parte relevante - função handleFormSubmit e props do AppointmentForm)
+// frontend/src/pages/CalendarPage.js (COMPLETO OTIMIZADO)
 import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -8,6 +8,7 @@ import Navbar from '../components/Navbar';
 import AppointmentForm from '../components/AppointmentForm';
 import ConfirmDialog from '../components/ConfirmDialog';
 import appointmentService from '../services/appointmentService';
+import authService from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import { formatTimeOnly, alignTo30Min, APP_TIMEZONE } from '../utils/dateUtils';
@@ -25,40 +26,54 @@ const CalendarPage = () => {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
   const { user: currentUser } = useAuth();
 
-  // Carrega lista de médicos
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      if (!currentUser) return;
-      try {
-        const response = await appointmentService.getAllAppointments({});
-        const doctorSet = new Set();
-        const doctorList = [];
+  // FUNÇÃO OTIMIZADA: Carrega lista de médicos de forma específica
+  const fetchDoctors = async () => {
+    if (!currentUser || currentUser.role === 'doctor') return;
+    
+    setDoctorsLoading(true);
+    try {
+      // ABORDAGEM OTIMIZADA: Busca todos os usuários e filtra médicos
+      const response = await authService.getAllUsers();
+      const doctorsList = response.data
+        .filter(user => user.role === 'doctor')
+        .map(doctor => ({
+          id: doctor.id,
+          name: doctor.name,
+          crm: doctor.crm
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-        (response.data || []).forEach(appt => {
-          if (appt.doctor?.id && !doctorSet.has(appt.doctor.id)) {
-            doctorSet.add(appt.doctor.id);
-            doctorList.push({
-              id: appt.doctor.id,
-              name: appt.doctor.name
-            });
-          }
-        });
-
-        setDoctors(doctorList);
-        
-        // Se for médico, seleciona automaticamente
-        if (currentUser.role === 'doctor') {
-          setSelectedDoctorId(currentUser.id);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar médicos:', err);
-        showMessage('Erro ao carregar lista de médicos', true);
+      setDoctors(doctorsList);
+      
+      // Se há apenas um médico, seleciona automaticamente
+      if (doctorsList.length === 1 && !selectedDoctorId) {
+        setSelectedDoctorId(doctorsList[0].id);
       }
-    };
+    } catch (err) {
+      console.error('Erro ao carregar médicos:', err);
+      showMessage('Erro ao carregar lista de médicos', true);
+    } finally {
+      setDoctorsLoading(false);
+    }
+  };
+
+  // Carrega médicos quando o usuário muda
+  useEffect(() => {
     fetchDoctors();
   }, [currentUser]);
+
+  // Recarrega médicos quando o formulário fecha (atualização)
+  const handleFormClose = () => {
+    setShowForm(false);
+    setSelectedAppointment(null);
+    // Recarrega médicos para pegar possíveis novos médicos
+    if (currentUser?.role !== 'doctor') {
+      fetchDoctors();
+    }
+  };
 
   // Carrega eventos do calendário
   const fetchEvents = async () => {
@@ -87,7 +102,7 @@ const CalendarPage = () => {
             textColor: '#ffffff',
             extendedProps: {
               ...appt,
-              displayTime: timeStr // Adiciona hora formatada para tooltips
+              displayTime: timeStr
             }
           };
         });
@@ -129,11 +144,6 @@ const CalendarPage = () => {
     setShowForm(true);
   };
 
-  const handleFormClose = () => {
-    setShowForm(false);
-    setSelectedAppointment(null);
-  };
-
   const handleFormSubmit = (msg, error) => {
     showMessage(msg, error);
     if (!error) {
@@ -142,7 +152,7 @@ const CalendarPage = () => {
     }
   };
 
-    // CORREÇÃO: Função para solicitação de exclusão do formulário
+  // Função para solicitação de exclusão do formulário
   const handleDeleteRequest = (appointmentId) => {
     setAppointmentToDelete(appointmentId);
     setShowConfirm(true);
@@ -156,7 +166,7 @@ const CalendarPage = () => {
       await appointmentService.deleteAppointment(appointmentToDelete);
       showMessage('Agendamento excluído com sucesso!', false);
       fetchEvents();
-      setShowForm(false); // Fecha o formulário após exclusão
+      setShowForm(false);
     } catch (err) {
       console.error('Erro ao excluir agendamento:', err);
       showMessage('Erro ao excluir agendamento', true);
@@ -179,6 +189,11 @@ const CalendarPage = () => {
     setShowForm(true);
   };
 
+  // Função para limpar filtro de médico
+  const handleClearDoctorFilter = () => {
+    setSelectedDoctorId('');
+  };
+
   return (
     <div className="min-h-screen bg-background-light">
       <Navbar />
@@ -191,21 +206,38 @@ const CalendarPage = () => {
           </h1>
           
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full lg:w-auto">
-            {/* Filtro de Médicos (apenas para admin/secretária) */}
-            {currentUser?.role !== 'doctor' && doctors.length > 0 && (
-              <select
-                value={selectedDoctorId}
-                onChange={(e) => setSelectedDoctorId(e.target.value)}
-                className="w-full sm:w-auto p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-dark focus:border-transparent bg-white"
-                disabled={loading}
-              >
-                <option value="">Todos os médicos</option>
-                {doctors.map(doctor => (
-                  <option key={doctor.id} value={doctor.id}>
-                    {doctor.name}
-                  </option>
-                ))}
-              </select>
+            {/* Filtro de Médicos com formatação corrigida */}
+            {currentUser?.role !== 'doctor' && (
+              <div className="relative w-full sm:w-64">
+                <select
+                  value={selectedDoctorId}
+                  onChange={(e) => setSelectedDoctorId(e.target.value)}
+                  className="w-full p-3 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-dark focus:border-transparent bg-white appearance-none"
+                  disabled={loading || doctorsLoading}
+                >
+                  <option value="">Todos os médicos</option>
+                  {doctors.map(doctor => (
+                    <option key={doctor.id} value={doctor.id}>
+                      {doctor.name}
+                    </option>
+                  ))}
+                </select>          
+                
+
+                {/* Botão para limpar filtro quando um médico está selecionado */}
+                {selectedDoctorId && (
+                  <button
+                    onClick={handleClearDoctorFilter}
+                    className="absolute inset-y-0 right-8 flex items-center px-2 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                    title="Limpar filtro"
+                    type="button"
+                  >
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             )}
             
             <button
@@ -222,10 +254,17 @@ const CalendarPage = () => {
         {message && (
           <div className={`p-4 mb-6 rounded-lg text-center font-medium ${
             isError 
-              ? 'bg-red-700 text-red-100 border border-red-300' 
-              : 'bg-green-700 text-green-100 border border-green-300'
+              ? 'bg-red-600 text-red-100 border border-red-300' 
+              : 'bg-green-600 text-green-100 border border-green-300'
           }`}>
             {message}
+          </div>
+        )}
+
+        {/* Indicador de carregamento de médicos */}
+        {doctorsLoading && (
+          <div className="p-2 mb-4 text-center text-sm text-text-light bg-blue-50 rounded-lg">
+            <span className="animate-pulse">🔄 Atualizando lista de médicos...</span>
           </div>
         )}
 
@@ -263,11 +302,11 @@ const CalendarPage = () => {
               day: 'Dia'
             }}
             slotEventOverlap={false}
-            dayMaxEvents={3}
+            dayMaxEvents={1}
             moreLinkClick="popover"
-            moreLinkContent={(args) => `+${args.num} mais`}
+            moreLinkContent={(args) => `+ ${args.num} mais`}
             
-            // CORREÇÃO: Tooltips consistentes
+            // Tooltips consistentes
             eventDidMount={(info) => {
               const { extendedProps } = info.event;
               const timeStr = extendedProps.displayTime || formatTimeOnly(info.event.start);
@@ -287,7 +326,7 @@ const CalendarPage = () => {
               }
             }}
 
-            // CORREÇÃO: Conteúdo do evento sem mostrar horário
+            // Conteúdo do evento sem mostrar horário
             eventContent={(info) => {
               let content = '';
               
@@ -304,7 +343,7 @@ const CalendarPage = () => {
               };
             }}
 
-            // CORREÇÃO: Células do mês
+            // Células do mês
             dayCellContent={(info) => (
               <div className={info.isToday ? 'bg-blue-50 rounded p-1 text-center font-semibold' : 'text-center'}>
                 {info.dayNumberText.replace('º', '')}
@@ -313,13 +352,13 @@ const CalendarPage = () => {
           />
         </div>
 
-        {/* Modal do Formulário - CORREÇÃO: Adiciona onDelete prop */}
+        {/* Modal do Formulário */}
         <Modal show={showForm} onClose={handleFormClose}>
           <AppointmentForm
             appointment={selectedAppointment}
             onSubmit={handleFormSubmit}
             onCancel={handleFormClose}
-            onDelete={handleDeleteRequest} // NOVA PROP: Callback para exclusão
+            onDelete={handleDeleteRequest}
           />
         </Modal>
 

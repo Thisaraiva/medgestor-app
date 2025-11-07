@@ -2,8 +2,9 @@
 
 const asyncHandler = require('../middleware/controllerMiddleware'); 
 const userService = require('../services/userService'); 
-const { ValidationError, NotFoundError, ForbiddenError } = require('../errors/errors'); // Adicionar ForbiddenError
+const { ValidationError, NotFoundError, ForbiddenError } = require('../errors/errors');
 const Joi = require('joi'); 
+const { User } = require('../models'); // ADICIONADO: Import do modelo User
 
 // Schemas de validação Joi (Inalterados)
 const updateUserSchema = Joi.object({
@@ -36,12 +37,21 @@ const updateMyProfileSchema = Joi.object({
   }),
 }).min(1); 
 
+// NOVA FUNÇÃO: Endpoint específico para buscar médicos
+exports.getDoctors = asyncHandler(async (req, res) => {
+  const doctors = await User.findAll({
+    where: { role: 'doctor' },
+    attributes: ['id', 'name', 'email', 'crm'],
+    order: [['name', 'ASC']]
+  });
+  
+  res.status(200).json(doctors);
+});
 
 exports.getAllUsers = asyncHandler(async (req, res) => {
   const users = await userService.getAllUsers();
   res.status(200).json(users);
 });
-
 
 exports.getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -68,9 +78,7 @@ exports.updateUser = asyncHandler(async (req, res) => {
     // 2. Regra de Negócio: Permissão para alterar o ROLE
     // Apenas administradores podem alterar o role de qualquer um.
     if (req.body.role && req.user.role !== 'admin') {
-        // **CORREÇÃO DRY/SOLID:** Usando o ForbiddenError
         throw new ForbiddenError('Apenas administradores podem alterar o papel de outros usuários.'); 
-        // Linha ANTERIOR: return res.status(403).json({ message: 'Apenas administradores podem alterar o papel de outros usuários.' });
     }
 
     const updatedUser = await userService.updateUser(id, req.body);
@@ -84,16 +92,12 @@ exports.deleteUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
     
     if (req.user.id === id) {
-        // **CORREÇÃO DRY/SOLID:** Usando o ForbiddenError
         throw new ForbiddenError('Você não pode excluir seu próprio usuário através desta rota. Use a funcionalidade de desativação ou peça a outro administrador.'); 
-        // Linha ANTERIOR: return res.status(403).json({ message: 'Você não pode excluir seu próprio usuário através desta rota. Use a funcionalidade de desativação ou peça a outro administrador.' });
     }
     
     const userToDelete = await userService.getUserById(id);
     if (userToDelete && userToDelete.role === 'admin' && req.user.role !== 'admin') {
-        // **CORREÇÃO DRY/SOLID:** Usando o ForbiddenError
         throw new ForbiddenError('Apenas um administrador pode excluir outro administrador.');
-        // Linha ANTERIOR: return res.status(403).json({ message: 'Apenas um administrador pode excluir outro administrador.' });
     }
 
     await userService.deleteUser(id);
@@ -109,7 +113,6 @@ exports.updateMyProfile = asyncHandler(async (req, res) => {
 
     // Garante que o usuário só pode editar o próprio perfil (LSP)
     if (req.user.id !== id) {
-        // CORREÇÃO SOLID: Lança ForbiddenError para status 403
         throw new ForbiddenError('Você não tem permissão para editar este perfil.'); 
     }
     
