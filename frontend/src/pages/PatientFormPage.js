@@ -1,15 +1,17 @@
 // frontend/src/pages/PatientFormPage.js
-
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import PatientForm from '../components/PatientForm';
 import patientService from '../services/patientService';
+import Modal from '../components/Modal';
 
 const PatientFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [patient, setPatient] = useState(null);
+  const [showModal, setShowModal] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -17,11 +19,10 @@ const PatientFormPage = () => {
     const fetchPatient = async () => {
       if (id) {
         try {
-          const fetchedPatient = await patientService.getPatientById(id);
-          setPatient(fetchedPatient);
+          const data = await patientService.getPatientById(id);
+          setPatient(data);
         } catch (err) {
-          console.error('Erro ao buscar paciente para edição:', err);
-          setError('Erro ao carregar dados do paciente para edição.');
+          setError('Erro ao carregar paciente.');
         } finally {
           setLoading(false);
         }
@@ -30,39 +31,54 @@ const PatientFormPage = () => {
       }
     };
     fetchPatient();
-  }, [id]);
 
-  const handleFormSubmit = (message, isError) => {
-    console.log('Formulário de paciente submetido:', message, 'Erro:', isError);
+    // Limpa estado de navegação
+    if (location.state) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [id, location, navigate]);
+
+  const handleSubmit = (message, isError) => {
+    if (!isError) {
+      setTimeout(() => {
+        navigate('/patients', { state: { message, isError } });
+      }, 1000);
+    }
+  };
+
+  const handleCancel = () => {
+    setShowModal(false);
     setTimeout(() => {
-      navigate('/patients', { state: { message, isError } });
-    }, 1000);
+      navigate('/patients');
+    }, 300);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background-light font-sans flex items-center justify-center">
-        <p className="text-text-DEFAULT text-lg">Carregando formulário...</p>
+      <div className="min-h-screen bg-background-light flex items-center justify-center">
+        <p className="text-lg">Carregando...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background-light font-sans flex items-center justify-center">
+      <div className="min-h-screen bg-background-light flex items-center justify-center">
         <p className="text-error text-lg">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-light font-sans">
+    <div className="min-h-screen bg-background-light">
       <Navbar />
-      <div className="container mx-auto p-6 flex justify-center">
-        <div className="w-full max-w-2xl">
-          <PatientForm patient={patient} onSubmit={handleFormSubmit} />
-        </div>
-      </div>
+      <Modal show={showModal} onClose={handleCancel}>
+        <PatientForm
+          patient={patient}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+        />
+      </Modal>
     </div>
   );
 };
