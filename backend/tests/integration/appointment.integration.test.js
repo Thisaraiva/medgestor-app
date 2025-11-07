@@ -180,7 +180,7 @@ describe('Appointment API Endpoints', () => {
         .send(createData);
 
       expect(response.statusCode).toBe(400);
-      expect(response.body.error).toContain('data e hora da consulta devem ser futuras');
+      expect(response.body.error).toContain('Data e hora da consulta devem ser futuras');
     });
 
     test('Deve retornar 400 para conflito de horário', async () => {

@@ -1,4 +1,4 @@
-// frontend/src/pages/CalendarPage.js
+// frontend/src/pages/CalendarPage.js (APENAS a parte relevante - função handleFormSubmit e props do AppointmentForm)
 import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -10,7 +10,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import appointmentService from '../services/appointmentService';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
-import { parseBrDateToISO } from '../utils/dateUtils';
+import { formatTimeOnly, alignTo30Min, APP_TIMEZONE } from '../utils/dateUtils';
 import moment from 'moment-timezone';
 
 const CalendarPage = () => {
@@ -24,77 +24,106 @@ const CalendarPage = () => {
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { user: currentUser } = useAuth();
 
+  // Carrega lista de médicos
   useEffect(() => {
     const fetchDoctors = async () => {
       if (!currentUser) return;
       try {
-        const res = await appointmentService.getAllAppointments({});
-        const doctorMap = new Map();
-        res.data?.forEach(appt => {
-          if (appt.doctor?.id) doctorMap.set(appt.doctor.id, appt.doctor.name);
+        const response = await appointmentService.getAllAppointments({});
+        const doctorSet = new Set();
+        const doctorList = [];
+
+        (response.data || []).forEach(appt => {
+          if (appt.doctor?.id && !doctorSet.has(appt.doctor.id)) {
+            doctorSet.add(appt.doctor.id);
+            doctorList.push({
+              id: appt.doctor.id,
+              name: appt.doctor.name
+            });
+          }
         });
-        const list = Array.from(doctorMap, ([id, name]) => ({ id, name }));
-        setDoctors(list);
-        if (currentUser.role === 'doctor') setSelectedDoctorId(currentUser.id);
+
+        setDoctors(doctorList);
+        
+        // Se for médico, seleciona automaticamente
+        if (currentUser.role === 'doctor') {
+          setSelectedDoctorId(currentUser.id);
+        }
       } catch (err) {
-        console.error(err);
+        console.error('Erro ao carregar médicos:', err);
+        showMessage('Erro ao carregar lista de médicos', true);
       }
     };
     fetchDoctors();
   }, [currentUser]);
 
+  // Carrega eventos do calendário
   const fetchEvents = async () => {
     if (!currentUser) return;
-    const filters = currentUser.role === 'doctor' ? { doctorId: currentUser.id } : { doctorId: selectedDoctorId };
+    
+    setLoading(true);
+    const filters = currentUser.role === 'doctor' 
+      ? { doctorId: currentUser.id } 
+      : selectedDoctorId 
+        ? { doctorId: selectedDoctorId } 
+        : {};
+
     try {
-      const res = await appointmentService.getAllAppointments(filters);
-      const formatted = (res.data || [])
-        .filter(a => a.date && a.id)
+      const response = await appointmentService.getAllAppointments(filters);
+      const formattedEvents = (response.data || [])
+        .filter(appt => appt.id && appt.isoStart && appt.patient)
         .map(appt => {
-          const start = parseBrDateToISO(appt.date);
-          if (!start) return null;
-          const end = new Date(new Date(start).getTime() + 30 * 60000).toISOString();
-          const timeStr = moment.utc(appt.date).tz('America/Sao_Paulo').format('HH:mm');
+          const timeStr = formatTimeOnly(appt.isoStart);
           return {
             id: appt.id,
-            title: `${timeStr} - ${appt.patient?.name || 'Paciente'} (${appt.type === 'initial' ? 'Ini' : 'Ret'})`,
-            start,
-            end,
+            title: `${appt.patient.name} (${appt.type === 'initial' ? 'Inicial' : 'Retorno'})`,
+            start: appt.isoStart,
+            end: appt.isoEnd,
             backgroundColor: appt.insurance ? '#1a73e8' : '#34a853',
             borderColor: 'transparent',
-            textColor: '#fff',
-            extendedProps: appt,
+            textColor: '#ffffff',
+            extendedProps: {
+              ...appt,
+              displayTime: timeStr // Adiciona hora formatada para tooltips
+            }
           };
-        })
-        .filter(Boolean);
-      setEvents(formatted);
+        });
+
+      setEvents(formattedEvents);
     } catch (err) {
-      showMessage('Erro ao carregar agenda.', true);
+      console.error('Erro ao carregar agendamentos:', err);
+      showMessage('Erro ao carregar agenda', true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => { fetchEvents(); }, [selectedDoctorId, currentUser]);
+  useEffect(() => {
+    fetchEvents();
+  }, [selectedDoctorId, currentUser]);
 
   const showMessage = (msg, error = false) => {
     setMessage(msg);
     setIsError(error);
-    setTimeout(() => setMessage(''), 4000);
+    setTimeout(() => setMessage(''), 5000);
   };
 
+  // Clique em data vazia - novo agendamento
   const handleDateClick = (info) => {
-    // Usa moment com fuso de SP para evitar +3h
-    const local = moment.tz(info.dateStr, 'America/Sao_Paulo');
-    const aligned = local.clone().minutes(Math.floor(local.minutes() / 30) * 30).seconds(0);
+    const clickedDate = moment.tz(info.date, APP_TIMEZONE);
+    const alignedDate = alignTo30Min(clickedDate);
 
     setSelectedAppointment({
-      dateOnly: aligned.format('YYYY-MM-DD'),
-      timeOnly: aligned.format('HH:mm')
+      dateOnly: alignedDate.format('YYYY-MM-DD'),
+      timeOnly: alignedDate.format('HH:mm')
     });
     setShowForm(true);
   };
 
+  // Clique em evento existente - editar
   const handleEventClick = (info) => {
     setSelectedAppointment(info.event.extendedProps);
     setShowForm(true);
@@ -107,75 +136,107 @@ const CalendarPage = () => {
 
   const handleFormSubmit = (msg, error) => {
     showMessage(msg, error);
-    handleFormClose();
-    fetchEvents();
+    if (!error) {
+      handleFormClose();
+      fetchEvents();
+    }
   };
 
-  const confirmDelete = (id) => {
-    setAppointmentToDelete(id);
+    // CORREÇÃO: Função para solicitação de exclusão do formulário
+  const handleDeleteRequest = (appointmentId) => {
+    setAppointmentToDelete(appointmentId);
     setShowConfirm(true);
   };
 
-  const handleDelete = async () => {
+  const handleDeleteConfirmed = async () => {
+    if (!appointmentToDelete) return;
+    
+    setLoading(true);
     try {
       await appointmentService.deleteAppointment(appointmentToDelete);
-      showMessage('Agendamento excluído com sucesso!');
+      showMessage('Agendamento excluído com sucesso!', false);
       fetchEvents();
+      setShowForm(false); // Fecha o formulário após exclusão
     } catch (err) {
-      showMessage('Erro ao excluir agendamento.', true);
+      console.error('Erro ao excluir agendamento:', err);
+      showMessage('Erro ao excluir agendamento', true);
     } finally {
+      setLoading(false);
       setShowConfirm(false);
       setAppointmentToDelete(null);
     }
   };
 
+  // Novo agendamento via botão
+  const handleNewAppointment = () => {
+    const now = moment().tz(APP_TIMEZONE);
+    const alignedNow = alignTo30Min(now);
+
+    setSelectedAppointment({
+      dateOnly: alignedNow.format('YYYY-MM-DD'),
+      timeOnly: alignedNow.format('HH:mm')
+    });
+    setShowForm(true);
+  };
+
   return (
     <div className="min-h-screen bg-background-light">
       <Navbar />
-      <div className="container mx-auto p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h1 className="text-4xl font-bold text-primary-dark">Agenda</h1>
-          <div className="flex gap-3 items-center flex-wrap">
+      
+      <div className="container mx-auto p-4 lg:p-6">
+        {/* Cabeçalho */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+          <h1 className="text-3xl lg:text-4xl font-bold text-primary-dark">
+            Agenda Médica
+          </h1>
+          
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center w-full lg:w-auto">
+            {/* Filtro de Médicos (apenas para admin/secretária) */}
             {currentUser?.role !== 'doctor' && doctors.length > 0 && (
               <select
                 value={selectedDoctorId}
                 onChange={(e) => setSelectedDoctorId(e.target.value)}
-                className="p-3 pr-10 border rounded-lg text-sm focus:ring-2 focus:ring-primary-dark appearance-none bg-white"
-                style={{
-                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236b7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E")',
-                  backgroundPosition: 'right 0.5rem center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '1.5em'
-                }}
+                className="w-full sm:w-auto p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-dark focus:border-transparent bg-white"
+                disabled={loading}
               >
                 <option value="">Todos os médicos</option>
-                {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {doctors.map(doctor => (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.name}
+                  </option>
+                ))}
               </select>
             )}
+            
             <button
-              onClick={() => {
-                const now = moment.tz('America/Sao_Paulo');
-                now.minutes(Math.floor(now.minutes() / 30) * 30).seconds(0);
-                setSelectedAppointment({
-                  dateOnly: now.format('YYYY-MM-DD'),
-                  timeOnly: now.format('HH:mm')
-                });
-                setShowForm(true);
-              }}
-              className="bg-primary-dark text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-light transition"
+              onClick={handleNewAppointment}
+              disabled={loading}
+              className="w-full sm:w-auto bg-primary-dark text-white px-6 py-3 rounded-lg font-bold hover:bg-primary-light disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
             >
               Novo Agendamento
             </button>
           </div>
         </div>
 
+        {/* Mensagens */}
         {message && (
-          <div className={`p-4 mb-6 rounded-lg text-center font-medium ${isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+          <div className={`p-4 mb-6 rounded-lg text-center font-medium ${
+            isError 
+              ? 'bg-red-700 text-red-100 border border-red-300' 
+              : 'bg-green-700 text-green-100 border border-green-300'
+          }`}>
             {message}
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 overflow-hidden">
+        {/* Calendário */}
+        <div className="bg-white rounded-2xl shadow-xl p-4 lg:p-6 overflow-hidden">
+          {loading && (
+            <div className="text-center py-4 text-text-light">
+              Carregando agendamentos...
+            </div>
+          )}
+          
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -188,56 +249,86 @@ const CalendarPage = () => {
             events={events}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
-            selectable={true}
+            selectable={false}
             slotDuration="00:30:00"
             slotMinTime="06:00:00"
             slotMaxTime="22:00:00"
             height="auto"
             locale="pt-br"
-            buttonText={{ today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia' }}
+            timeZone="local"
+            buttonText={{
+              today: 'Hoje',
+              month: 'Mês',
+              week: 'Semana', 
+              day: 'Dia'
+            }}
             slotEventOverlap={false}
-            dayMaxEvents={1} // ← Evita crescimento de linhas
+            dayMaxEvents={3}
+            moreLinkClick="popover"
             moreLinkContent={(args) => `+${args.num} mais`}
+            
+            // CORREÇÃO: Tooltips consistentes
             eventDidMount={(info) => {
-              // Força background no mês
+              const { extendedProps } = info.event;
+              const timeStr = extendedProps.displayTime || formatTimeOnly(info.event.start);
+              const title = `${timeStr} - ${info.event.title}`;
+              
+              info.el.setAttribute('title', title);
+              
+              // Estilos específicos para view mensal
               if (info.view.type === 'dayGridMonth') {
                 info.el.style.backgroundColor = info.event.backgroundColor;
                 info.el.style.borderColor = 'transparent';
-                info.el.style.color = '#fff';
+                info.el.style.color = '#ffffff';
                 info.el.style.borderRadius = '4px';
                 info.el.style.padding = '2px 4px';
                 info.el.style.fontSize = '11px';
+                info.el.style.marginBottom = '1px';
               }
             }}
-            eventContent={(info) => (
-              <div
-                className="p-1 text-xs font-medium truncate cursor-pointer"
-                title={`${info.timeText} - ${info.event.title}`}
-              >
-                {info.event.title}
-              </div>
-            )}
-            dayCellContent={(arg) => (
-              <div className={arg.isToday ? 'bg-blue-50 rounded p-1 text-center' : 'text-center'}>
-                {arg.dayNumberText.replace('º', '')}
+
+            // CORREÇÃO: Conteúdo do evento sem mostrar horário
+            eventContent={(info) => {
+              let content = '';
+              
+              if (info.view.type === 'dayGridMonth') {
+                // View mensal: mostra apenas nome do paciente e tipo
+                content = info.event.title.replace(/^\d{2}:\d{2} - /, '');
+              } else {
+                // Views diária/semanal: conteúdo padrão
+                content = info.event.title;
+              }
+              
+              return {
+                html: `<div class="fc-event-content p-1 text-xs font-medium truncate cursor-pointer">${content}</div>`
+              };
+            }}
+
+            // CORREÇÃO: Células do mês
+            dayCellContent={(info) => (
+              <div className={info.isToday ? 'bg-blue-50 rounded p-1 text-center font-semibold' : 'text-center'}>
+                {info.dayNumberText.replace('º', '')}
               </div>
             )}
           />
         </div>
 
+        {/* Modal do Formulário - CORREÇÃO: Adiciona onDelete prop */}
         <Modal show={showForm} onClose={handleFormClose}>
           <AppointmentForm
             appointment={selectedAppointment}
             onSubmit={handleFormSubmit}
             onCancel={handleFormClose}
+            onDelete={handleDeleteRequest} // NOVA PROP: Callback para exclusão
           />
         </Modal>
 
+        {/* Modal de Confirmação de Exclusão */}
         <ConfirmDialog
           show={showConfirm}
           onClose={() => setShowConfirm(false)}
-          onConfirm={handleDelete}
-          message="Tem certeza que deseja excluir este agendamento?"
+          onConfirm={handleDeleteConfirmed}
+          message="Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita."
         />
       </div>
     </div>
