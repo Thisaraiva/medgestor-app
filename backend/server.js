@@ -32,6 +32,15 @@ app.use('/api/records', recordRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/users', userRoutes);
 
+// Rota de saúde (acessível em https://api.medgestor.com/health)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+  });
+});
+
 // Error Handling
 app.use(errorMiddleware);
 

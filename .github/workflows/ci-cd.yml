@@ -2,52 +2,123 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      db_test:
+        image: postgres:17
+        env:
+          POSTGRES_DB: medgestor_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Node.js
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20.14.0'
-      - name: Install backend dependencies
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend
+        run: npm ci
+        working-directory: ./backend
+
+      - name: Wait for DB
         run: |
-          cd backend
-          npm install
-      - name: Run backend tests
-        run: |
-          cd backend
-          npm test
-      - name: Lint backend code
-        run: |
-          cd backend
-          npm run lint
+          for i in {1..10}; do
+            nc -z localhost 5433 && break
+            echo "Aguardando DB..."
+            sleep 5
+          done
+
+      - name: Run Migrations (Test)
+        run: npx sequelize-cli db:migrate --env test
+        working-directory: ./backend
+        env:
+          DB_NAME_TEST: medgestor_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_HOST_TEST: localhost
+          DB_PORT_TEST: 5433
+
+      - name: Run Seeds (Test)
+        run: npx sequelize-cli db:seed:all --env test
+        working-directory: ./backend
+        env:
+          DB_NAME_TEST: medgestor_test
+          DB_HOST_TEST: localhost
+          DB_PORT_TEST: 5433
+          SEED_DEFAULT_PASSWORD: pass123
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Run Tests
+        run: npm test
+        working-directory: ./backend
+        env:
+          NODE_ENV: test
+          DB_NAME_TEST: medgestor_test
+          DB_HOST_TEST: localhost
+          DB_PORT_TEST: 5433
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Lint Backend
+        run: npm run lint
+        working-directory: ./backend
+
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Node.js
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20.14.0'
-      - name: Install frontend dependencies
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Build Frontend
+        run: npm run build
+        working-directory: ./frontend
+        env:
+          REACT_APP_API_URL: https://api.medgestor.com
+
+      - name: Lint Frontend
+        run: npm run lint
+        working-directory: ./frontend
+
+  deploy:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Trigger Render Deploy
         run: |
-          cd frontend
-          npm install
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
-      - name: Lint frontend code
-        run: |
-          cd frontend
-          npm run lint
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys
+          
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys
