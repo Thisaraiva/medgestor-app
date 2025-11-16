@@ -102,7 +102,7 @@ jobs:
         run: npm run build
         working-directory: ./frontend
         env:
-          REACT_APP_API_URL: https://api.medgestor.com
+          REACT_APP_API_URL: https://medgestor-backend.onrender.com/api
 
       - name: Lint Frontend
         run: npm run lint

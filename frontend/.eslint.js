@@ -13,7 +13,7 @@ export default [
     },
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'module',
+      sourceType: 'script',
       globals: {
         browser: true,
         es2021: true,

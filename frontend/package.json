@@ -1,7 +1,7 @@
 {
   "name": "medgestor-frontend",
   "version": "1.0.0",
-  "description": "Application for managing medical appointments",
+  "description": "Application for managing medical appointments",  
   "main": "src/index.js",
   "scripts": {
     "start": "webpack serve --mode development",

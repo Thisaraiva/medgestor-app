@@ -8,6 +8,7 @@ package-lock.json
 
 # Ambiente
 .env
+.env.test
 .env.local
 .env.*.local
 .env.production
@@ -44,3 +45,4 @@ Thumbs.db
 __tests__/
 *.test.js
 *.spec.js
+99_seed_admin_production.js
