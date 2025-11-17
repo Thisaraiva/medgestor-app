@@ -7,8 +7,8 @@
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "test": "jest",
-    "lint": "eslint . --config eslint.config.js --ext .js,.jsx",
-    "lint:fix": "eslint . --config eslint.config.js --ext .js,.jsx --fix"
+    "lint": "eslint . --config eslint.config.mjs --ext .js,.jsx",
+    "lint:fix": "eslint . --config eslint.config.mjs --ext .js,.jsx --fix"
   },
   "repository": {
     "type": "git",
