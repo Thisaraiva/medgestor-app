@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar';
 import medicalRecordService from '../services/medicalRecordService';
 import patientService from '../services/patientService';
 import { useAuth } from '../context/AuthContext';
-import { FaPlus, FaPencilAlt, FaTrashAlt } from 'react-icons/fa';
+import { /*FaPlus,*/ FaPencilAlt, FaTrashAlt } from 'react-icons/fa';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const RecordViewPage = () => {

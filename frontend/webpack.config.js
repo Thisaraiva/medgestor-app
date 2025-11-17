@@ -50,6 +50,7 @@ module.exports = (env, argv) => {
         },
       ],
     },
+    // Comment test
     plugins: [
       new HtmlWebpackPlugin({
         template: './public/index.html',

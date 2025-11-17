@@ -18,7 +18,7 @@ const AppointmentForm = ({ appointment, onSubmit, onCancel, onDelete }) => {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting/*, setDeleting*/] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [insurancePlans, setInsurancePlans] = useState([]);
   const [formLoading, setFormLoading] = useState(true);
@@ -35,7 +35,7 @@ const AppointmentForm = ({ appointment, onSubmit, onCancel, onDelete }) => {
         doctorList.sort((a, b) => a.name.localeCompare(b.name));
         setDoctors(doctorList);
         setInsurancePlans(plansRes.data);
-      } catch (err) {
+      } catch (_err) {
         setMessage('Erro ao carregar dados para o formulário.');
         setIsError(true);
       } finally {

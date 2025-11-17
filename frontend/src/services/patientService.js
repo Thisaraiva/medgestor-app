@@ -16,17 +16,17 @@ const createPatient = async (patientData) => {
 
 // MODIFICADO: Agora aceita um objeto de filtros (ex: { name: 'João' })
 const getPatients = async (filters = {}) => {
-  try {
-    // Constrói a string de query com base nos filtros
-    // Ex: {name: 'joao', cpf: '123'} -> ?name=joao&cpf=123
-    const query = new URLSearchParams(filters).toString();
-    // Se a query for vazia, a URL será /patients. Se não, será /patients?name=...
-    const response = await api.get(`${API_URL}${query ? `?${query}` : ''}`); 
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao carregar pacientes:', error.response?.data || error.message);
-    throw error;
-  }
+  try {
+    // Constrói a string de query com base nos filtros
+    // Ex: {name: 'joao', cpf: '123'} -> ?name=joao&cpf=123
+    const query = new URLSearchParams(filters).toString();
+    // Se a query for vazia, a URL será /patients. Se não, será /patients?name=...
+    const response = await api.get(`${API_URL}${query ? `?${query}` : ''}`);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao carregar pacientes:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 const getPatientById = async (patientId) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import prescriptionService from '../services/prescriptionService';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+//import { useAuth } from '../context/AuthContext';
+//import { useNavigate } from 'react-router-dom';
 import moment from 'moment'; // Importamos moment para formatação de data
 
 const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
@@ -19,8 +19,8 @@ const PrescriptionForm = ({ prescription, patientId, patient, onSuccess }) => {
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  //const { user } = useAuth();
+  //const navigate = useNavigate();
 
   // 2. Efeito para inicialização do formulário
   useEffect(() => {

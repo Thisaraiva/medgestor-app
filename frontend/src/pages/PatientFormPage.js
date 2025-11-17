@@ -21,7 +21,7 @@ const PatientFormPage = () => {
         try {
           const data = await patientService.getPatientById(id);
           setPatient(data);
-        } catch (err) {
+        } catch (_err) {
           setError('Erro ao carregar paciente.');
         } finally {
           setLoading(false);
