@@ -45,4 +45,3 @@ Thumbs.db
 __tests__/
 *.test.js
 *.spec.js
-99_seed_admin_production.js
