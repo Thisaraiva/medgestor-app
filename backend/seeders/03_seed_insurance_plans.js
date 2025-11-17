@@ -11,16 +11,16 @@ const HAPVIDA_ID = '5f4d1e0c-3b2a-4c9e-8d7a-1b2c3d4e5f6a';
 module.exports = {
   /**
    * Aplica os seeds de planos de saúde.
-   * A cláusula ON CONFLICT (name) garante que, se o nome já existir, 
-   * o registro será atualizado com o nosso ID fixo, eliminando o erro de UNIQUE constraint.
+   * Adicionado 'Sequelize' como segundo argumento por convenção, 
+   * embora não seja usado diretamente no 'up'.
    */
-  async up(queryInterface) {
+  async up(queryInterface, _Sequelize) { // <-- Adicionado Sequelize aqui para consistência
     const tableName = 'insurance_plans';
     console.log(`Aplicando seeds de planos de saúde na tabela ${tableName} usando ON CONFLICT (name) DO UPDATE...`);
 
     const insurancePlans = [
       {
-        id: UNIMED_ID, 
+        id: UNIMED_ID,
         name: 'Unimed',
         description: 'Plano de saúde Unimed',
         isActive: true,
@@ -28,7 +28,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: BRADESCO_ID, 
+        id: BRADESCO_ID,
         name: 'Bradesco Saúde',
         description: 'Plano de saúde Bradesco',
         isActive: true,
@@ -36,7 +36,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: AMIL_ID, 
+        id: AMIL_ID,
         name: 'Amil',
         description: 'Plano de saúde Amil',
         isActive: true,
@@ -44,7 +44,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: HAPVIDA_ID, 
+        id: HAPVIDA_ID,
         name: 'Hapvida',
         description: 'Plano de saúde Hapvida',
         isActive: true,
@@ -54,44 +54,44 @@ module.exports = {
     ];
 
     try {
-        // CORREÇÃO ESSENCIAL: O conflito é verificado no campo 'name',
-        // e o 'id' é atualizado com o valor fixo no 'DO UPDATE'.
-        for (const plan of insurancePlans) {
-            await queryInterface.sequelize.query(`
+      // CORREÇÃO ESSENCIAL: O conflito é verificado no campo 'name',
+      // e o 'id' é atualizado com o valor fixo no 'DO UPDATE'.
+      for (const plan of insurancePlans) {
+        await queryInterface.sequelize.query(`
                 INSERT INTO "${tableName}" (id, name, description, "isActive", "createdAt", "updatedAt") 
                 VALUES (:id, :name, :description, :isActive, :createdAt, :updatedAt)
                 ON CONFLICT (name) DO UPDATE
-                SET 
+                  SET 
                     id = EXCLUDED.id, -- Garante que o ID fixo seja aplicado ao registro existente
                     description = EXCLUDED.description,
                     "isActive" = EXCLUDED."isActive",
-                    "updatedAt" = EXCLUDED."updatedAt";
-            `, {
-                replacements: plan,
-                type: queryInterface.sequelize.QueryTypes.INSERT
-            });
-        }
-        console.log(`Seeds de Planos de Saúde aplicados com sucesso na tabela ${tableName}.`);
+                    "updatedAt" = EXCLUDED."updatedAt";`, {
+          replacements: plan,
+          type: queryInterface.sequelize.QueryTypes.INSERT
+        });
+      }
+      console.log(`Seeds de Planos de Saúde aplicados com sucesso na tabela ${tableName}.`);
     } catch (error) {
-        // Manteve-se o log de erro detalhado para diagnosticar problemas de migration
-        console.error('--------------------------------------------------');
-        console.error('[SEEDER ERROR DETALHADO] Falha ao inserir planos de saúde. Verifique se a coluna NAME possui um índice UNIQUE.');
-        console.error('Detalhes do Erro:', error.message);
-        console.error('--------------------------------------------------');
-        throw error;
+      // Manteve-se o log de erro detalhado para diagnosticar problemas de migration
+      console.error('--------------------------------------------------');
+      console.error('[SEEDER ERROR DETALHADO] Falha ao inserir planos de saúde. Verifique se a coluna NAME possui um índice UNIQUE.');
+      console.error('Detalhes do Erro:', error.message);
+      console.error('--------------------------------------------------');
+      throw error;
     }
   },
 
   /**
    * Remove os seeds aplicados.
    */
-  async down(queryInterface) {
+  async down(queryInterface, Sequelize) { // <-- CORREÇÃO PRINCIPAL: Recebe Sequelize como segundo argumento
     const fixedIds = [UNIMED_ID, BRADESCO_ID, AMIL_ID, HAPVIDA_ID];
-    const Op = queryInterface.Sequelize.Op;
+    // CORREÇÃO: Obter o objeto Op diretamente do argumento Sequelize
+    const { Op } = Sequelize;
 
     // Remove apenas os planos com os IDs fixos.
     await queryInterface.bulkDelete('insurance_plans', {
-        id: { [Op.in]: fixedIds }
+      id: { [Op.in]: fixedIds }
     }, {});
   },
 };
