@@ -7,7 +7,7 @@ const baseConfig = {
   dialect: 'postgres',
   logging: false,
 };
-
+//Teste
 module.exports = {
   development: {
     ...baseConfig,
