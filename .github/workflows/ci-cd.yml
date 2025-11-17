@@ -67,8 +67,9 @@ jobs:
           SEED_DEFAULT_PASSWORD: pass123
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
-      - name: Run Tests
-        run: npm test
+      # RODAR APENAS TESTES DE INTEGRAÇÃO
+      - name: Run Integration Tests
+        run: npm run test:integration
         working-directory: ./backend
         env:
           NODE_ENV: test

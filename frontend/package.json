@@ -7,7 +7,8 @@
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint . --config eslint.config.js --ext .js,.jsx",
+    "lint:fix": "eslint . --config eslint.config.js --ext .js,.jsx --fix"
   },
   "repository": {
     "type": "git",
@@ -41,7 +42,7 @@
     "@babel/preset-env": "^7.25.8",
     "@babel/preset-react": "^7.25.7",
     "@testing-library/jest-dom": "^6.5.0",
-    "@testing-library/react": "^16.0.1",
+    "@testing-library/react": "^16.0.1",    
     "autoprefixer": "^10.4.20",
     "babel-loader": "^9.2.1",
     "css-loader": "^7.1.2",
@@ -54,6 +55,7 @@
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0"
+    "webpack-dev-server": "^5.1.0",
+    "globals": "^15.0.0"
   }
 }
