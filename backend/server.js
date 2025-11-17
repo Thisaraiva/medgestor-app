@@ -2,10 +2,7 @@
 
 const express = require('express');
 const cors = require('cors');
-// O require de 'dotenv' no início do arquivo é desnecessário no docker-compose
-// onde as variáveis são injetadas. Mantenha-o no config/database se for necessário
-// para ambientes locais, mas aqui não é estritamente necessário se database.js
-// já lida com isso.
+
 
 const sequelize = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
@@ -19,8 +16,39 @@ const errorMiddleware = require('./middleware/errorMiddleware');
 
 const app = express();
 
+// ----------------------------------------------------
+// CORREÇÃO ESSENCIAL: Configuração CORS Explícita
+// ----------------------------------------------------
+
+// Origens permitidas (incluindo HTTPS de produção e HTTP local)
+const allowedOrigins = [
+  'https://medgestor-frontend.onrender.com',
+  'http://localhost:3000', // Porta padrão do React local
+  'http://localhost:5000', // Caso teste o frontend e backend juntos via Docker
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permite requisições sem 'origin' (como apps móveis, cURL, ou local)
+    // E também permite as origens da nossa lista
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // Se a origem não estiver na lista, bloqueia
+      callback(new Error(`Not allowed by CORS for origin: ${origin}`));
+    }
+  },
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Necessário para cookies/sessões, embora você use JWT
+  optionsSuccessStatus: 204
+};
+
+// Aplica o middleware CORS configurado
+app.use(cors(corsOptions));
+
+// ----------------------------------------------------
+
 // Middleware
-app.use(cors());
 app.use(express.json());
 
 // Routes
