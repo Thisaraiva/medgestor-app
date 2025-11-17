@@ -14,7 +14,7 @@ export default [
     },
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'module',
+      sourceType: 'script',
       parserOptions: {
         ecmaFeatures: {
           jsx: true, // ← OBRIGATÓRIO PARA JSX EM .js
