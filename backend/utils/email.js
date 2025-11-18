@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+/*const nodemailer = require('nodemailer');
 require('dotenv').config(); // Garante que as variáveis de ambiente sejam carregadas
 
 const transporter = nodemailer.createTransport({
@@ -47,3 +47,4 @@ const sendAppointmentConfirmation = async ({ to, patientName, doctorName, date, 
 };
 
 module.exports = { sendAppointmentConfirmation };
+*/

@@ -1,7 +1,7 @@
 // backend/services/appointmentService.js
 const { Appointment, User, Patient, InsurancePlan } = require('../models');
 const { NotFoundError, ValidationError } = require('../errors/errors');
-const { sendAppointmentConfirmation } = require('../utils/email');
+//const { sendAppointmentConfirmation } = require('../utils/email');
 const moment = require('moment-timezone');
 const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
@@ -123,7 +123,7 @@ const createAppointment = async (data) => {
   });
 
   // Envio de email
-  if (fullAppointment.patient?.email) {
+  /*if (fullAppointment.patient?.email) {
     const localDate = moment.utc(fullAppointment.date).tz(APP_TIMEZONE);
     await sendAppointmentConfirmation({
       to: fullAppointment.patient.email,
@@ -132,7 +132,7 @@ const createAppointment = async (data) => {
       date: localDate.format('DD/MM/YYYY HH:mm'),
       insuranceInfo: fullAppointment.insurance ? fullAppointment.insurancePlan?.name : 'Particular',
     });
-  }
+  }*/
 
   return formatAppointmentResponse(fullAppointment);
 };
