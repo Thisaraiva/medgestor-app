@@ -22,20 +22,20 @@ const app = express();
 
 // Origens permitidas (incluindo HTTPS de produção e HTTP local)
 const allowedOrigins = [
-  'https://medgestor-frontend-node.onrender.com/',
+  'https://medgestor-frontend-node.onrender.com',
+  'https://medgestor-frontend.onrender.com',
   'http://localhost:3000', // Porta padrão do React local
   'http://localhost:5000', // Caso teste o frontend e backend juntos via Docker
 ];
 
+const normalizeOrigin = (origin) => origin?.replace(/\/+$/, '');
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permite requisições sem 'origin' (como apps móveis, cURL, ou local)
-    // E também permite as origens da nossa lista
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.some(o => normalizeOrigin(o) === normalizeOrigin(origin))) {
       callback(null, true);
     } else {
-      // Se a origem não estiver na lista, bloqueia
-      callback(new Error(`Not allowed by CORS for origin: ${origin}`));
+      callback(new Error(`CORS blocked: ${origin}`));
     }
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
