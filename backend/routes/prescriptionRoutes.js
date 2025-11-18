@@ -20,6 +20,7 @@ const validateRequest = (req, res, next) => {
 router.get(
     '/patient/:patientId',
     authMiddleware,
+    restrictTo('admin', 'doctor', 'secretary'),
     [param('patientId').isUUID().withMessage('ID do paciente inválido')],
     validateRequest,
     prescriptionController.getPrescriptionsByPatient
@@ -37,6 +38,7 @@ router.post(
 router.get(
     '/:id',
     authMiddleware,
+    restrictTo('admin', 'doctor', 'secretary'),
     [param('id').isUUID().withMessage('ID da prescrição inválido')],
     validateRequest,
     prescriptionController.getPrescriptionById
