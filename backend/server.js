@@ -22,7 +22,7 @@ const app = express();
 
 // Origens permitidas (incluindo HTTPS de produção e HTTP local)
 const allowedOrigins = [
-  'https://medgestor-frontend.onrender.com',
+  'https://medgestor-frontend-node.onrender.com/',
   'http://localhost:3000', // Porta padrão do React local
   'http://localhost:5000', // Caso teste o frontend e backend juntos via Docker
 ];
