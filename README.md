@@ -1,6 +1,8 @@
 # medgestor-app
 O projeto consiste no desenvolvimento de um aplicativo web para a gestão de consultórios médicos denominado “MedGestor”, focado no agendamento de consultas, gerenciamento de pacientes, histórico de prontuários e emissão de receitas médicas.
 
+* **OBS:** A documentação oficial com a descrição da estrutura, tecnologias, configuração, orientações para criação e instalação da aplicação, comandos e deploy da aplicação estão localizados em `https://github.com/Thisaraiva/medgestor-app/blob/main/docs/wiki_V1.markdown`.
+
 # MedGestor
 
 Uma aplicação web para gerenciamento de clínicas médicas.

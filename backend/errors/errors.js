@@ -16,7 +16,6 @@ class ValidationError extends Error {
   }
 }
 
-// **CORREÇÃO:** Adicionando a classe ForbiddenError (Status 403)
 class ForbiddenError extends Error {
   constructor(message) {
     super(message);
@@ -25,8 +24,6 @@ class ForbiddenError extends Error {
   }
 }
 
-// **MELHORIA/BOA PRÁTICA:** Adicionando UnprocessableEntityError (Status 422)
-// Útil para validações de regra de negócio mais complexas no futuro.
 class UnprocessableEntityError extends Error {
   constructor(message) {
     super(message);

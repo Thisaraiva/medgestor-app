@@ -24,11 +24,6 @@ module.exports = {
     // **Torna o Seed Idempotente (Upsert usando ON CONFLICT)**
     console.log(`Verificando e garantindo o usuário Admin (${ADMIN_EMAIL}) via ON CONFLICT...`);
 
-    // Nota: O nome da tabela deve ser o mesmo do seu schema (provavelmente 'users' em minúsculas)
-    // Se o seu modelo for 'User', a tabela padrão no Sequelize é 'Users' (Pluralizado)
-    // Se você usa a migração padrão, deve ser 'users' ou 'Users'. Vamos usar "users" por segurança, verifique se está correto.
-
-    // Usaremos ON CONFLICT (id) para garantir que não haja duplicidade
     await queryInterface.sequelize.query(`
         INSERT INTO "users" (id, name, email, password, role, crm, "createdAt", "updatedAt") 
         VALUES (:id, :name, :email, :password, :role, :crm, :createdAt, :updatedAt)

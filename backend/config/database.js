@@ -1,10 +1,5 @@
 // C:\Programacao\Projetos\JavaScript\medgestor-app\backend\config\database.js
 
-// Nota: require('dotenv').config() não é necessário aqui se já estiver
-// em config.js e se a aplicação for inicializada com as variáveis do .env
-// No entanto, para segurança, mantê-lo ou depender do ambiente é ok.
-// Vamos manter o padrão de carregar o config.js para garantir que o dotenv seja lido.
-
 const { Sequelize } = require('sequelize');
 const cliConfig = require('./config'); // Carrega as configurações do CLI
 

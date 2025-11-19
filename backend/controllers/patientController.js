@@ -62,9 +62,7 @@ exports.createPatient = asyncHandler(async (req, res) => {
   if (error) {
     throw new ValidationError(error.details[0].message); // Usar ValidationError
   }
-  // O serviço (patientService.js) é onde o erro do Sequelize UniqueConstraintError deve ser tratado
-  // e relançado como um erro customizado, ou o errorMiddleware deve ser capaz de pegá-lo.
-  // Como o asyncHandler já está aplicado, o errorMiddleware deverá capturar o erro do Service/Sequelize.
+  
   const newPatient = await patientService.createPatient(value);
   res.status(201).json(newPatient);
 });

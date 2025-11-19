@@ -57,15 +57,6 @@ module.exports = {
       },
     ];
 
-    // 1. Usar bulkInsert com opção de ignorar (para PostgreSQL é mais complexo)
-    // A maneira mais simples no Sequelize CLI é fazer a verificação manualmente ou usar o upsert.
-    // Usaremos a lógica de DELETE/INSERT apenas para os ambientes que a permitem (como TESTE, que tem cleanup)
-    // Para produção, vamos usar upsert (update or insert) para garantir a idempotência dos 3 usuários cruciais.
-    
-    // ATENÇÃO: O 'upsert' no Sequelize CLI `db:seed:all` é complicado, pois não temos acesso direto ao modelo.
-    // A MELHOR SOLUÇÃO é USAR SOMENTE `queryInterface.bulkInsert` E REMOVER `db:seed:all` DO START COMMAND DO RENDER.
-    
-    // NO ENTANTO, se você *precisa* rodar seeds em todo deploy, vamos adotar o `sequelize.query` com INSERT INTO ... ON CONFLICT (id) DO NOTHING
     
     if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
         
