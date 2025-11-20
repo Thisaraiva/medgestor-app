@@ -138,7 +138,7 @@ const PatientList = () => {
   );
 
   const canPrescribe = user && (
-    user.role === 'admin' || user.role === 'doctor'
+    user.role === 'admin' || user.role === 'doctor' || user.role === 'secretary'
   );
 
   if (loading) {

@@ -34,7 +34,7 @@ router.put(
 router.delete(
   '/:id',
   authMiddleware,
-  restrictTo('doctor','admin'),
+  restrictTo('doctor','admin', 'secretary'),
   [param('id').isUUID().withMessage('ID do paciente inválido')],
   validateRequest, // Usar o novo middleware
   patientController.deletePatient

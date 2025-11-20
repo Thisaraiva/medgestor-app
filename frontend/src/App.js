@@ -58,7 +58,7 @@ function App() {
               <Route path="/insurance-plans/edit/:id" element={<InsurancePlanFormPage />} />
             </Route>
 
-            <Route element={<PrivateRoute roles={['admin', 'doctor'/*, 'secretary'*/]} />}>
+            <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
               <Route path="/patients/:patientId/medical-records" element={<RecordViewPage />} />
               <Route path="/patients/:patientId/medical-records/new" element={<RecordFormPage />} />
               <Route path="/patients/:patientId/medical-records/edit/:recordId" element={<RecordFormPage />} />
@@ -69,7 +69,7 @@ function App() {
               {/* Secretary pode ver a lista e imprimir */}
             </Route>
 
-            <Route element={<PrivateRoute roles={['admin', 'doctor']} />}>
+            <Route element={<PrivateRoute roles={['admin', 'doctor', 'secretary']} />}>
               <Route path="/patients/:patientId/prescriptions/new" element={<PrescriptionFormPage />} />
               <Route path="/patients/:patientId/prescriptions/edit/:prescriptionId" element={<PrescriptionFormPage />} />
             </Route>

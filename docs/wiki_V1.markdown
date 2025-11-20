@@ -15,12 +15,12 @@
 ```
 | Item                            | URL                                                                      |
 |---------------------------------|--------------------------------------------------------------------------|
-| Aplicação em Produção           | https://medgestor-frontend-node.onrender.com                            |
+| Aplicação em Produção           | https://medgestor-frontend-node.onrender.com                               |
 | API Backend                     | https://medgestor-backend.onrender.com/api                               |
-| Repositório GitHub              | https://github.com/Thisaraiva/medgestor-app                              |
-| Banco de Dados (Render)         | `dpg-d47uk43ipnbc73d57950-a` (Oregon US-West)                           |
-| Dashboard Render – Frontend     | https://dashboard.render.com/web/srv-d4drjfbe5dus73fb9da0              |
-| Dashboard Render – Backend      | https://dashboard.render.com/web/srv-d47vjn7diees739l09n0              |
+| Repositório GitHub              | https://github.com/Thisaraiva/medgestor-app                     |        
+| Banco de Dados (Render)         | `dpg-d47uk43ipnbc73d57950-a` (Oregon US-West)                          |
+| Dashboard Render – Frontend     | https://dashboard.render.com/web/srv-d4drjfbe5dus73fb9da0          |       
+| Dashboard Render – Backend      | https://dashboard.render.com/web/srv-d47vjn7diees739l09n0          |        
 ```
 
 ---
@@ -686,6 +686,7 @@ Este projeto está em constante evolução. Abaixo estão as próximas áreas de
 **Modelo C4 Completo – Nível 1 ao 3**  
 
 ### C4 – Level 1: System Context
+
 ```mermaid
 graph LR
     subgraph Usuários
@@ -693,8 +694,9 @@ graph LR
         M[Médico]
         S[Secretária]
     end
-    A & M & S -->|HTTPS| MedGestor[MedGestor<br/>Sistema Web]
-    MedGestor -->|E-mail (futuro)| SMTP
+
+    A & M & S -->|HTTPS| MedGestor["MedGestor Sistema Web de Gestão Clínica"]
+    MedGestor -->|E-mail (futuro)| SMTP[Servidor SMTP]
 ```
 
 ### C4 – Level 2: Container Diagram (Produção Atual – Render.com)
@@ -721,12 +723,12 @@ graph TD
 graph LR
     Client[Frontend] -->|HTTP| Routes[Routes Express]
     Routes --> Controllers[Controllers]
-    Controllers --> Services[Services<br/>(Regras de Negócio)]
+    Controllers --> Services["Services (Regras de Negócio)"]
     Services --> Models[Sequelize Models]
     Models --> DB[(PostgreSQL)]
-    
-    Controllers --> Middleware[Middleware<br/>auth, error, asyncHandler]
-    Services --> Utils[JWT, UUID]
+
+    Controllers --> Middleware["Middleware auth, error, asyncHandler"]
+    Services --> Utils["Utils JWT, UUID"]
 ```
 
 ---
@@ -747,7 +749,7 @@ sequenceDiagram
     B-->>F: 201 Created
     F-->>S: Agendamento criado
     
-    Note over S,B: Depois no dia da consulta...
+    Note over S,B: Depois ou durante a consulta...
     S->>F: Médico abre prontuário
     F->>B: POST /api/records
     B->>DB: INSERT medical_record

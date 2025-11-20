@@ -7,7 +7,7 @@ const { authMiddleware, restrictTo } = require('../middleware/authMiddleware');
 
 // Define um middleware de autenticação e permissão para todas as rotas deste router
 // Isso elimina a repetição de código em cada rota
-router.use(authMiddleware, restrictTo('admin', 'doctor'/*,'secretary'*/));
+router.use(authMiddleware, restrictTo('admin', 'doctor','secretary'));
 
 // Rota para buscar todos os prontuários de um paciente específico
 router.get(
