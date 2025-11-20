@@ -685,19 +685,21 @@ Este projeto está em constante evolução. Abaixo estão as próximas áreas de
 
 **Modelo C4 Completo – Nível 1 ao 3**  
 
-### C4 – Level 1: System Context
+### C4 – Level 1: System Context (Containers – Produção Atual)
 
 ```mermaid
 graph LR
-    subgraph Usuários
-        A[Administrador]
-        M[Médico]
-        S[Secretária]
-    end
+    User[Usuário] -->|HTTPS| Nginx[Frontend<br/>React + Nginx]
+    Nginx -->|HTTP JSON| Express[Backend<br/>Node.js/Express]
+    Express -->|Sequelize| Postgres[(PostgreSQL 17<br/>Render)]
+    Express -->|JWT| Auth[Auth Service]
 
-    A & M & S -->|HTTPS| MedGestor["MedGestor Sistema Web de Gestão Clínica"]
-    MedGestor -->|E-mail (futuro)| SMTP[Servidor SMTP]
+    subgraph "Render.com Free Tier"
+        Nginx & Express & Postgres
+    end
 ```
+
+---
 
 ### C4 – Level 2: Container Diagram (Produção Atual – Render.com)
 
@@ -799,22 +801,6 @@ graph TD
 * Azul: Backend (Web Service – sempre ligado)
 * Roxo: Banco de Dados (PostgreSQL externo)
 * Setas automáticas: CI/CD completo com GitHub Actions + Render Deploy Hooks
-
----
-
-### Diagrama C4 – Level 2 (Containers – Produção Atual)
-
-```mermaid
-graph LR
-    User[Usuário] -->|HTTPS| Nginx[Frontend<br/>React + Nginx]
-    Nginx -->|HTTP JSON| Express[Backend<br/>Node.js/Express]
-    Express -->|Sequelize| Postgres[(PostgreSQL 17<br/>Render)]
-    Express -->|JWT| Auth[Auth Service]
-
-    subgraph "Render.com Free Tier"
-        Nginx & Express & Postgres
-    end
-```
 
 ---
 
